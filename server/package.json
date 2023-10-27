@@ -1,0 +1,21 @@
+{
+  "type": "module",
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "fastify start server.js",
+    "migrate": "drizzle-kit generate:pg --out ./migrations --schema ./db/schema.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "drizzle-orm": "^0.28.6",
+    "fastify": "^4.24.3",
+    "postgres": "^3.4.1"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.19.13"
+  }
+}
