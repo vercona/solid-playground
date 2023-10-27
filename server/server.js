@@ -13,7 +13,7 @@ const fastify = Fastify({
 // });
 
 const main = async () => {
-  console.log("db", db);
+  // console.log("db", db);
   // await migrate(db, { migrationsFolder: "./migrations" })
   //   .then(() => {
   //     console.log("Migrations complete!");
