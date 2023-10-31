@@ -8,6 +8,20 @@
       "when": 1698368209277,
       "tag": "0000_confused_omega_sentinel",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1698714284679,
+      "tag": "0001_spotty_kitty_pryde",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1698714817196,
+      "tag": "0002_rare_black_crow",
+      "breakpoints": true
     }
   ]
 }

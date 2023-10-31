@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import firstRoute from "./our-first-route.js";
-import { db } from "./db/index.js";
+import firstRoute from "./our-first-route";
+import { db } from "./db";
 
 const fastify = Fastify({
   logger: true,
