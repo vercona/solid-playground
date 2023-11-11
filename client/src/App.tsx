@@ -7,10 +7,10 @@ import Post from './pages/Post';
 const App: Component = () => {
   // console.log("test this", import.meta.env.DEV)
   return (
-    <div class="w-screen h-screen bg-black">
+    <div class="w-screen min-h-screen bg-black">
       <Routes>
         <Route path="/" component={Home} />
-        <Route path="/posts" component={Post} />
+        <Route path="/posts/:postId" component={Post} />
       </Routes>
     </div>
   );

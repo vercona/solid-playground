@@ -55,6 +55,7 @@ interface Comments {
   };
   body: string;
   created_at: string;
+  level: number;
   comments: Comments[];
 }
 
@@ -67,6 +68,7 @@ const CommentsSchema: z.ZodType<Comments> = z.lazy(() =>
     }),
     body: z.string(),
     created_at: z.string(),
+    level: z.number(),
     comments: z.array(CommentsSchema),
   })
 );
@@ -108,7 +110,7 @@ export const routes = router({
     .input(getAllCommentsInput)
     .output(
       z.object({
-        post: getPost.extend({created_at: z.string()}),
+        post: getPost,
         comments: z.array(CommentsSchema),
       })
     )

@@ -1,6 +1,6 @@
-import { sql } from "drizzle-orm";
 import { pgTable, uuid, timestamp, varchar, integer, text } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { z } from "zod";
 
 export const user = pgTable("profiles", {
   user_id: uuid("user_id").primaryKey().defaultRandom(),
@@ -42,4 +42,4 @@ export const createCommentInput = createInsertSchema(comment).omit({
 export const getPostInput = createSelectSchema(post).pick({ post_id: true });
 export const getAllCommentsInput = createSelectSchema(comment).pick({ post_id: true });
 
-export const getPost = createSelectSchema(post);
+export const getPost = createSelectSchema(post).extend({ created_at: z.string() });
