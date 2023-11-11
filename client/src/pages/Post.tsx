@@ -1,7 +1,6 @@
-import { Show, createResource, createSignal, onMount } from "solid-js";
-import { createDeepSignal, createAggregated } from "@solid-primitives/resource";
-import { trackStore, trackDeep } from "@solid-primitives/deep";
-import { getPost, getPostAndComments } from "../apiCalls/CommentSectionCalls";
+import { Show, createResource } from "solid-js";
+import { createDeepSignal } from "@solid-primitives/resource";
+import {  getPostAndComments } from "../apiCalls/CommentSectionCalls";
 import { RouterOutputs, trpc } from "../utils/api";
 import Comment from "../components/Comment";
 import { useParams } from "@solidjs/router";

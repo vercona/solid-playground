@@ -5,7 +5,6 @@ import Home from "./pages/Home";
 import Post from './pages/Post';
 
 const App: Component = () => {
-  // console.log("test this", import.meta.env.DEV)
   return (
     <div class="w-screen min-h-screen bg-black">
       <Routes>

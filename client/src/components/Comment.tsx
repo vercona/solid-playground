@@ -30,9 +30,7 @@ const Comment = (props: CommentProps) => {
                   <div class="text-xl">{comment.user.username}</div>
                   <div>{comment.body}</div>
                   <Show when={comment.comments}>
-                    <ul class="ml-5">
                       <Comment comments={comment.comments} />
-                    </ul>
                   </Show>
                 </li>
               )}
