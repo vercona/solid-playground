@@ -46,14 +46,15 @@ const fetchQueries = async () => {
     //   content: "What are your goals?",
     // });
     const response = await trpc.getPostAndComments.query({
-      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b97",
     });
     console.log("response", response);
     // console.log("response", response.comments[0].user);
     // console.log("response2", response[0]);
 
   } catch (err) {
-    console.log("error", err);
+    console.log("error data", err.data);
+    console.log("error message", err.message);
   }
   // console.log("test???")
 };

@@ -1,11 +1,22 @@
 // import { FastifyInstance } from "fastify";
 import { eq, isNull, sql } from "drizzle-orm";
-import { initTRPC } from "@trpc/server";
-import { z } from "zod";
+import { TRPCError, initTRPC } from "@trpc/server";
+import { ZodError, z } from "zod";
 import { db } from "./db";
 import { comment, createCommentInput, createPostInput, createUserInput, getAllCommentsInput, getPost, getPostInput, post, user } from "./db/schemas";
 
-export const t = initTRPC.create();
+export const t = initTRPC.create({
+  errorFormatter({ shape, error }) {
+    return {
+      ...shape,
+      data: {
+        ...shape.data,
+        zodError:
+          error.cause instanceof ZodError ? error.cause.flatten() : null,
+      },
+    };
+  },
+});
 
 // interface Comments {
 //   user: string;
@@ -250,6 +261,18 @@ export const routes = router({
 
       // try{
       const response: any = await db.execute(getAllCommentsQuery);
+
+      if (!response[0].json_build_object.posts){
+        // console.log("Post not found!!");
+        // const err: any = new Error("Post not found");
+        // err.status = 401;
+        // throw err;
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Post not found",
+        });
+      }
+
       const formattedResponse = {
         post: response[0].json_build_object.posts,
         comments: response[0].json_build_object.comments.comments,
