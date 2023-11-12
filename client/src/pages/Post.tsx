@@ -1,75 +1,52 @@
-import { Show, catchError, createEffect, createResource, onMount } from "solid-js";
-import { createDeepSignal } from "@solid-primitives/resource";
-import {  getPostAndComments } from "../apiCalls/CommentSectionCalls";
-import { RouterOutputs, trpc } from "../utils/api";
-import Comment from "../components/Comment";
+// Solid Imports
+import { Show, catchError, createEffect, createResource, createSignal, onMount, ErrorBoundary } from "solid-js";
 import { useParams } from "@solidjs/router";
 
-// type Post = RouterOutputs["getPost"];
+import { createDeepSignal } from "@solid-primitives/resource";
+
+// API Imports
+import { RouterOutputs } from "../utils/api";
+import { getPostAndComments } from "../apiCalls/CommentSectionCalls";
 type PostAndComments = RouterOutputs["getPostAndComments"];
+
+// Local Imports
+import Comment from "../components/Comment";
+
 
 const Post = () => {
   const params = useParams();
-  // const [testApi] = createResource(async () => {
-  //   const response = await fetch(
-  //     "https://testapi.devtoolsdaily.com/countries?iso3=USAD"
-  //   );
-  //   return response.json();
-  // });
-  // const [singlePost, { mutate: setSinglePost }] = createResource<PostAndComments, string>(
-  //   params.postId,
-  //   getPostAndComments,
-  //   // async (postId) => trpc.getPostAndComments.query({post_id: postId}),
-  //   // { storage: createDeepSignal },
-  // );
-  const [singlePost, { mutate: setSinglePost }] = createResource<
-    // PostAndComments,
-    any,
-    string
-  >(
+
+  const [
+    singlePost, 
+    { mutate: setSinglePost }
+  ] = createResource<PostAndComments, string>(
     params.postId,
     async (postId) => {
-      console.log("params", params.post_id)
-      try{
-        return getPostAndComments(postId);
-      }catch(err: any){
-        console.log("err", err.message)
-        return new Error((err as any).message);
-        // throw err;
-        // return err;
-      }
+      return getPostAndComments(postId);
     },
-    // {}
+    // { storage: createDeepSignal }
   );
 
   createEffect(() => {
-    // console.log("testApi", testApi());
-    // console.log("testApi error", testApi.error)
-      console.log("inside createEffect error", singlePost.error);
-      console.log("singlePost response", singlePost());
+    console.log("Post Error:", !!singlePost.error);
   });
-
-  // console.log("singlePost error", singlePost.error);
-
 
   return (
     <div class="w-full h-full p-5">
-      <Show when={singlePost() && singlePost()?.post}>
-        <div class="text-xl font-medium">{singlePost()!.post.title}</div>
-        <div>{singlePost()!.post.description}</div>
-      </Show>
-      <Show when={singlePost() && singlePost()?.comments}>
-        <Comment comments={singlePost()!.comments} />
-      </Show>
-      <Show when={singlePost.error}>
-        <div class="text-xl">ERROR??</div>
-      </Show>
-      {/* <Show when={!!singlePost().message}>
-        <div class="text-xl">ERROR??</div>
-      </Show> */}
-      {/* <Show when={testApi.error}>
-        <div class="text-xl">ERROR??</div>
-      </Show> */}
+      <p>Error: {''+!!singlePost.error}</p>
+
+      <ErrorBoundary fallback={<div>ERROR: {singlePost.error.message} </div>}>
+
+        <Show when={singlePost() && singlePost()?.post}>
+          <div class="text-xl font-medium">{singlePost()!.post.title}</div>
+          <div>{singlePost()!.post.description}</div>
+        </Show>
+        
+        <Show when={singlePost() && singlePost()?.comments}>
+          <Comment comments={singlePost()!.comments} />
+        </Show>
+
+      </ErrorBoundary>
     </div>
   );
 };
