@@ -1,8 +1,6 @@
 // Solid Imports
-import { Show, catchError, createEffect, createResource, createSignal, onMount, ErrorBoundary } from "solid-js";
+import { Show, createResource, ErrorBoundary } from "solid-js";
 import { useParams } from "@solidjs/router";
-
-import { createDeepSignal } from "@solid-primitives/resource";
 
 // API Imports
 import { RouterOutputs } from "../utils/api";
@@ -23,13 +21,8 @@ const Post = () => {
     params.postId,
     async (postId) => {
       return getPostAndComments(postId);
-    },
-    // { storage: createDeepSignal }
+    }
   );
-
-  createEffect(() => {
-    console.log("Post Error:", !!singlePost.error);
-  });
 
   return (
     <div class="w-full h-full p-5">
