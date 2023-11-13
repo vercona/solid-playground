@@ -26,11 +26,12 @@ const Post = () => {
 
   return (
       <ErrorBoundary
-        fallback={() =>{
-          const { errorMessage, statusCode } = formatErrorUrl(singlePost.error);
+        fallback={error => {
+          const { errorMessage, statusCode, errorStack } = formatErrorUrl(error);
+          const from = btoa(location.toString())
           return (
             <Navigate
-              href={`/${errorPageUrl}?message=${btoa(errorMessage)}&statusCode=${statusCode}`}
+              href={`/${errorPageUrl}?message=${btoa(errorMessage)}&statusCode=${statusCode}&stack=${btoa(''+errorStack)}&from=${from}`}
             />
           );
         }}
