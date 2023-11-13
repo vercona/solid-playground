@@ -263,10 +263,6 @@ export const routes = router({
       const response: any = await db.execute(getAllCommentsQuery);
 
       if (!response[0].json_build_object.posts){
-        // console.log("Post not found!!");
-        // const err: any = new Error("Post not found");
-        // err.status = 401;
-        // throw err;
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Post not found",

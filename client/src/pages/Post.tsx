@@ -1,6 +1,6 @@
 // Solid Imports
 import { Show, createResource, ErrorBoundary } from "solid-js";
-import { useParams } from "@solidjs/router";
+import { Navigate, useNavigate, useParams } from "@solidjs/router";
 
 // API Imports
 import { RouterOutputs } from "../utils/api";
@@ -9,38 +9,43 @@ type PostAndComments = RouterOutputs["getPostAndComments"];
 
 // Local Imports
 import Comment from "../components/Comment";
-
+import ErrorPage from "../components/ErrorPage";
+import { errorPageUrl } from "../utils/constants";
+import { formatErrorUrl } from "../utils/utilFunctions";
 
 const Post = () => {
   const params = useParams();
+  const navigate = useNavigate();
 
   const [
-    singlePost, 
-    { mutate: setSinglePost }
+    singlePost
   ] = createResource<PostAndComments, string>(
     params.postId,
-    async (postId) => {
-      return getPostAndComments(postId);
-    }
+    getPostAndComments,
   );
 
   return (
-    <div class="w-full h-full p-5">
-      <p>Error: {''+!!singlePost.error}</p>
+      <ErrorBoundary
+        fallback={() =>{
+          const { errorMessage, statusCode } = formatErrorUrl(singlePost.error);
+          return (
+            <Navigate
+              href={`/${errorPageUrl}?message=${btoa(errorMessage)}&statusCode=${statusCode}`}
+            />
+          );
+        }}
+      >
+        <div class="w-full h-full p-5">
+            <Show when={singlePost() && singlePost()?.post}>
+              <div class="text-xl font-medium">{singlePost()!.post.title}</div>
+              <div>{singlePost()!.post.description}</div>
+            </Show>
 
-      <ErrorBoundary fallback={<div>ERROR: {singlePost.error.message} </div>}>
-
-        <Show when={singlePost() && singlePost()?.post}>
-          <div class="text-xl font-medium">{singlePost()!.post.title}</div>
-          <div>{singlePost()!.post.description}</div>
-        </Show>
-        
-        <Show when={singlePost() && singlePost()?.comments}>
-          <Comment comments={singlePost()!.comments} />
-        </Show>
-
+            <Show when={singlePost() && singlePost()?.comments}>
+              <Comment comments={singlePost()!.comments} />
+            </Show>
+        </div>
       </ErrorBoundary>
-    </div>
   );
 };
 
