@@ -3,7 +3,7 @@ import { eq, isNull, sql } from "drizzle-orm";
 import { TRPCError, initTRPC } from "@trpc/server";
 import { ZodError, z } from "zod";
 import { db } from "./db";
-import { comment, createCommentInput, createPostInput, createUserInput, getAllCommentsInput, getPost, getPostInput, post, user } from "./db/schemas";
+import { comments, createCommentInput, createPostInput, createUserInput, deleteComment, getAllCommentsInput, getPost, getPostInput, posts, users } from "./db/schemas";
 
 export const t = initTRPC.create({
   errorFormatter({ shape, error }) {
@@ -86,17 +86,17 @@ const CommentsSchema: z.ZodType<Comments> = z.lazy(() =>
 
 export const routes = router({
   getComment: publicProcedure.query(async () => {
-    const allComments = await db.select().from(comment);
+    const allComments = await db.select().from(comments);
     return allComments;
   }),
   getAllUsers: publicProcedure.query(async () => {
-    const allUsers = await db.select().from(user);
+    const allUsers = await db.select().from(users);
     return allUsers;
   }),
   createUser: publicProcedure.input(createUserInput).mutation(async (req) => {
     const input = req.input;
     const response = await db
-      .insert(user)
+      .insert(users)
       .values({ ...input })
       .returning();
     return response;
@@ -105,14 +105,14 @@ export const routes = router({
     const { post_id } = req.input;
     const allUsers = await db
       .select()
-      .from(post)
-      .where(eq(post.post_id, post_id));
+      .from(posts)
+      .where(eq(posts.post_id, post_id));
     return allUsers;
   }),
   createPost: publicProcedure.input(createPostInput).mutation(async (req) => {
     const input = req.input;
     const response = await db
-      .insert(post)
+      .insert(posts)
       .values({ ...input })
       .returning();
     return response;
@@ -234,22 +234,22 @@ export const routes = router({
       //   WHERE c.parent_id is null AND
       //   c.post_id = ${post_id}
       // `;
-      const getAllCommentsQuery = sql`
-    select json_build_object(
-      'posts', p,
-      'comments', parentComment
-    )
-    from (
-      select
-        coalesce(json_agg(
-          comment_tree(comment_id)
-          order by c.created_at asc
-        ), '[]') as comments
-      from comments c
-      WHERE c.parent_id is null AND
-      c.post_id = ${post_id}
-    ) as parentComment
-    LEFT JOIN posts p ON p.post_id = ${post_id}
+    const getAllCommentsQuery = sql`
+      select json_build_object(
+        'posts', p,
+        'comments', parentComment
+      )
+      from (
+        select
+          coalesce(json_agg(
+            comment_tree(comment_id)
+            order by c.created_at asc
+          ), '[]') as comments
+        from comments c
+        WHERE c.parent_id is null AND
+        c.post_id = ${post_id}
+      ) as parentComment
+      LEFT JOIN posts p ON p.post_id = ${post_id}
     `;
 
       // 'post', json_build_object(
@@ -296,11 +296,18 @@ export const routes = router({
     .mutation(async (req) => {
       const input = req.input;
       const response = await db
-        .insert(comment)
+        .insert(comments)
         .values({ ...input })
         .returning();
       return response;
     }),
+  deleteComment: publicProcedure
+    .input(deleteComment)
+    .mutation(async (req) => {
+      const input = req.input;
+      const response = await db.delete(comments).where(eq(comments.comment_id, input.comment_id)).returning({ deleted_id: comments.comment_id });
+      return response;
+    })
 });
 
 // export default routes;

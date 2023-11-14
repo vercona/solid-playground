@@ -1,115 +1,105 @@
-import { For, Show, createSignal } from "solid-js";
+import { For, Show, createSignal, type JSX } from "solid-js";
 import { RouterOutputs } from "../utils/api";
+import { calcTimeDifference, getSentTimeMessage } from "../utils/utilFunctions";
+import { submitComment } from "../apiCalls/CommentSectionCalls";
 
-type Comments = RouterOutputs["getPostAndComments"]["comments"];
+type Comment = RouterOutputs["getPostAndComments"]["comments"][0];
 
 interface CommentProps {
-    comments: Comments
+    comment: Comment;
+    post_id: string;
 }
 
 const Comment = (props: CommentProps) => {
-    const { comments } = props;
-    let isLevelZero = false;
-    if(comments.length !== 0 && comments[0].level === 0){
-        isLevelZero = true;
-    }
-    const [isExpanded, setIsExpanded] = createSignal(isLevelZero ? true : false);
+  const { comment, post_id } = props;
 
-    return (
-      <>
-        <Show when={!isLevelZero && comments.length !== 0}>
-          <button onClick={() => setIsExpanded(!isExpanded())}>
-            {isExpanded() ? "-" : "+"}
-          </button>
-        </Show>
-        <Show when={isExpanded() && comments.length !== 0}>
-          <ul class="ml-5">
-            <For each={comments}>
-              {(comment, index) => {
-                const calcDate = (date1: Date, date2: Date) => {
-                  const diff = Math.floor(date1.getTime() - date2.getTime());
+  const [commentText, setCommentText] = createSignal('');
+  const [settings, setSettings] = createSignal({
+    isExpanded: false,
+    displayForm: false,
+  });
 
-                  const minutes = Math.floor(diff / (1000 * 60));
-                  const hours = Math.floor((minutes / 60));
-                  const days = Math.floor(hours / 24);
-                  const weeks = Math.floor(days/7);
-                  const months = Math.floor(days / 30.4167);
-                  const years = Math.floor(months / 12);
+  const timeDifference = calcTimeDifference(
+    new Date(),
+    new Date(comment.created_at)
+  );
 
-                  return {
-                    minutes,
-                    hours,
-                    days,
-                    weeks,
-                    months,
-                    years
-                  };
-                }
+  const submitReply: JSX.EventHandler<HTMLFormElement, Event> = (e) => {
+    e.preventDefault();
+    const response = submitComment("e274ca42-560c-49ef-95ab-c10511fb8412", post_id, comment.level + 1, commentText(), comment.comment_id);
+    console.log("comment submission", response);
+  };
 
-                const { minutes, hours, days, weeks, months, years } = calcDate(
-                  new Date(),
-                  new Date(comment.created_at)
-                );
+  const handleCommentInput = (textAreaValue: string) => {
+    setCommentText(textAreaValue);
+  }
 
-                const singularOrPluralMessage = (
-                  message: string,
-                  num: number
-                ) => {
-                  return num === 1 ? message : `${message}s`;
-                };
-
-                const getSentTimeMessage = () => {
-                  if (minutes < 1) {
-                    return `just now`;
-                  } else if (hours <= 0) {
-                    return `${minutes} ${singularOrPluralMessage(
-                      "minute",
-                      minutes
-                    )} ago`;
-                  } else if (days <= 0) {
-                    return `${hours} ${singularOrPluralMessage(
-                      "hour",
-                      hours
-                    )} ago`;
-                  } else if (weeks <= 0) {
-                    return `${days} ${singularOrPluralMessage(
-                      "day",
-                      days
-                    )} ago`;
-                  } else if (months <= 0) {
-                    return `${weeks} ${singularOrPluralMessage(
-                      "week",
-                      weeks
-                    )} ago`;
-                  } else if (years <= 0) {
-                    return `${months} ${singularOrPluralMessage(
-                      "month",
-                      months
-                    )} ago`;
-                  } else {
-                    return `${years} ${singularOrPluralMessage(
-                      "year",
-                      years
-                    )} ago`;
-                  }
-                }
-
-                return (
-                  <li class={`${index() !== 0 ? "mt-7" : ""}`}>
-                    <div class="text-xl">{comment.user.username}</div>
-                    <div>Comment sent {getSentTimeMessage()}</div>
-                    <div>{comment.body}</div>
-                    <Show when={comment.comments}>
-                      <Comment comments={comment.comments} />
-                    </Show>
-                  </li>
-                );
-              }}
-            </For>
-          </ul>
-        </Show>
-      </>
-    );
+  console.log("comment obj", comment)
+  return (
+    <li class="py-5">
+      <div class="text-xl">{comment.user.username}</div>
+      <div>Comment sent {getSentTimeMessage(timeDifference)}</div>
+      <div>{comment.body}</div>
+      <div>
+        <button
+          class="py-2"
+          onClick={() =>
+            setSettings((currentSettings) => ({
+              ...currentSettings,
+              displayForm: !currentSettings.displayForm,
+            }))
+          }
+        >
+          Reply
+        </button>
+      </div>
+      <Show when={settings().displayForm}>
+        <form onSubmit={submitReply} class="flex flex-col">
+          <label>Replying to {comment.user.username}</label>
+          <textarea
+            rows={"4"}
+            cols={"50"}
+            class="bg-black border-2 border-white w-3/4"
+            value={commentText()}
+            onInput={(e) => handleCommentInput(e.target.value)}
+          />
+          <div>
+            <button
+              class="px-2"
+              onClick={() =>
+                setSettings((currentSettings) => ({
+                  ...currentSettings,
+                  displayForm: false,
+                }))
+              }
+            >
+              Cancel
+            </button>
+            <input class="py-2" type="submit" value={"Submit"} />
+          </div>
+        </form>
+      </Show>
+      <Show when={comment.comments.length !== 0}>
+        <button
+          onClick={() =>
+            setSettings((currentSettings) => ({
+              ...currentSettings,
+              isExpanded: !currentSettings.isExpanded,
+            }))
+          }
+        >
+          {settings().isExpanded ? "-" : "+"}
+        </button>
+      </Show>
+      <Show when={settings().isExpanded}>
+        <ul class="ml-5">
+          <For each={comment.comments}>
+            {(comment) => <Comment comment={comment} post_id={post_id} />}
+          </For>
+        </ul>
+      </Show>
+    </li>
+  );
 };
 
 export default Comment;

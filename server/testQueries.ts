@@ -43,10 +43,13 @@ const fetchQueries = async () => {
     //   parent_id: "c0395394-365c-4f1b-b079-2efd01cb751c",
     //   user_id: SallyId,
     //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
-    //   content: "What are your goals?",
+    //   content: "Testing deletion",
     // });
-    const response = await trpc.getPostAndComments.query({
-      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b97",
+    // const response = await trpc.getPostAndComments.query({
+    //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+    // });
+    const response = await trpc.deleteComment.mutate({
+      comment_id: "b0a6bd43-9889-47d1-943e-0d2acd76119c",
     });
     console.log("response", response);
     // console.log("response", response.comments[0].user);

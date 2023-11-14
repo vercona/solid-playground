@@ -1,5 +1,5 @@
 // Solid Imports
-import { Show, createResource, ErrorBoundary } from "solid-js";
+import { Show, createResource, ErrorBoundary, For } from "solid-js";
 import { Navigate, useNavigate, useParams } from "@solidjs/router";
 
 // API Imports
@@ -9,7 +9,6 @@ type PostAndComments = RouterOutputs["getPostAndComments"];
 
 // Local Imports
 import Comment from "../components/Comment";
-import ErrorPage from "../components/ErrorPage";
 import { errorPageUrl } from "../utils/constants";
 import { formatErrorUrl } from "../utils/utilFunctions";
 
@@ -25,27 +24,35 @@ const Post = () => {
   );
 
   return (
-      <ErrorBoundary
-        fallback={() =>{
-          const { errorMessage, statusCode } = formatErrorUrl(singlePost.error);
-          return (
-            <Navigate
-              href={`/${errorPageUrl}?message=${btoa(errorMessage)}&statusCode=${statusCode}`}
-            />
-          );
-        }}
-      >
-        <div class="w-full h-full p-5">
-            <Show when={singlePost() && singlePost()?.post}>
-              <div class="text-xl font-medium">{singlePost()!.post.title}</div>
-              <div>{singlePost()!.post.description}</div>
-            </Show>
+    <ErrorBoundary
+      fallback={() => {
+        const { errorMessage, statusCode } = formatErrorUrl(singlePost.error);
+        return (
+          <Navigate
+            href={`/${errorPageUrl}?message=${btoa(
+              errorMessage
+            )}&statusCode=${statusCode}`}
+          />
+        );
+      }}
+    >
+      <div class="flex flex-col items-center justify-center">
+        <div class="max-w-3xl w-full">
+          <Show when={singlePost() && singlePost()?.post}>
+            <div class="text-xl font-medium">{singlePost()!.post.title}</div>
+            <div>{singlePost()!.post.description}</div>
+          </Show>
 
-            <Show when={singlePost() && singlePost()?.comments}>
-              <Comment comments={singlePost()!.comments} />
-            </Show>
+          <Show when={singlePost() && singlePost()?.comments}>
+            <ul class="ml-5">
+              <For each={singlePost()!.comments}>
+                {(comment) => <Comment comment={comment} post_id={singlePost()!.post.post_id}/>}
+              </For>
+            </ul>
+          </Show>
         </div>
-      </ErrorBoundary>
+      </div>
+    </ErrorBoundary>
   );
 };
 
