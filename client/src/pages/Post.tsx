@@ -3,7 +3,7 @@ import { Show, createResource, ErrorBoundary, For, createEffect, Signal } from "
 import { Navigate, useNavigate, useParams } from "@solidjs/router";
 
 // API Imports
-//import { getPostAndComments } from "../apiCalls/CommentSectionCalls";
+import { getPostAndComments } from "../apiCalls/CommentSectionCalls";
 
 // Local Imports
 import Comment from "../components/Comment";
@@ -12,28 +12,12 @@ import { formatErrorUrl } from "../utils/utilFunctions";
 import { Comment as CommentType, PostAndComments, PathArray } from "../utils/interfaces";
 //import { createDeepSignal } from "@solid-primitives/resource";
 
-import { createStore, reconcile, unwrap } from "solid-js/store";
+import { createStore } from "solid-js/store";
 
-import { trpc } from "../utils/api";
 
 const Post = () => {
   const params = useParams();
   const navigate = useNavigate();
-
-  //let thing;
-  
-  // function createDeepSignal<T>(): Signal<T | undefined>;
-  // function createDeepSignal<T>(value: T): Signal<T>;
-  // function createDeepSignal<T>(v?: T): Signal<T> {
-  //   const [store, setStore] = createStore([v]);
-  //   //thing = setStore
-  //   return [
-  //     () => store[0],
-  //     (update: T, path:[]=[]) => (
-  //       setStore(...[0, ...path], reconcile(typeof update === "function" ? update(unwrap(store[0])) : v)), store[0]
-  //     ),
-  //   ] as Signal<T>;
-  // }
 
   const [store, setStoreTmp] = createStore<PostAndComments[]>([]);
   let getStore = (...args: Array<string|number>)=>{ 
@@ -44,24 +28,16 @@ const Post = () => {
   }
   // @ts-ignore breaks typing... maybe just keep the 0...
   let setStore = (...args:Array<any>) => setStoreTmp(0, ...args) //typeof setStoreTmp
-  const getPostAndComments = async (post_id: string) => {
-    const response = await trpc.getPostAndComments.query({
-      post_id,
-    });
-    setStore(response)
-  };
 
   const [ status ] = createResource<void, string>(
     params.postId,
-    getPostAndComments
-    //()=>setStore(getPostAndComments())
+    async (v)=>{setStore(await getPostAndComments(v))}
   )
 
   const addComment = (pathArr: PathArray[], value: CommentType) => {
     if (getStore() && getStore()?.comments) {
       setStore('comments', ...pathArr, [
-        value,
-        ...(getStore('comments', ...pathArr) as CommentType[])
+        value, ...(getStore('comments', ...pathArr) as CommentType[])
       ])
     }
   };
