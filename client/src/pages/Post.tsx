@@ -28,12 +28,12 @@ const Post = () => {
 
   const addComment = (pathArr: PathArray[], value: CommentType) => {
     if (singlePost() && singlePost()?.comments) {
-      const postCopy = JSON.parse(JSON.stringify(singlePost()!.comments))
+      const postCopy = structuredClone(unwrap(singlePost()))
 
-      let changingObj: CommentType[] = pathArr.reduce((a, c) => a?.[c], postCopy as any)
+      let changingObj: CommentType[] = pathArr.reduce((a, c) => a?.[c], postCopy!.comments as any)
       changingObj.push(value);
       
-      mutate((currentPost) => ({ ...currentPost!, comments: postCopy}));
+      mutate(() => postCopy);
     }
   };
 
