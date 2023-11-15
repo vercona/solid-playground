@@ -46,9 +46,7 @@ const Post = () => {
   
   const addComment = (pathArr: PathArray[], value: CommentType) => {
     if (getStore() && getStore()?.comments) {
-      setStore('comments', ...pathArr, [
-        value, ...(getStore('comments', ...pathArr) as CommentType[])
-      ])
+      setStore('comments', ...pathArr, (existing: CommentType[])=>[value, ...existing])
     }
   };
 
