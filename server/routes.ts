@@ -48,16 +48,6 @@ export const t = initTRPC.create({
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
-
-interface PostsAndComments {
-  // json_build_object: {
-  //   posts: any,
-  //   comments: any
-  // }
-  post: any;
-  comments: any;
-}
-
 interface Comments {
   comment_id: string;
   user: {
@@ -298,8 +288,10 @@ export const routes = router({
       const response = await db
         .insert(comments)
         .values({ ...input })
+        // .leftJoin(users, eq(comments.user_id, users.user_id))
         .returning();
-      return response;
+      const formattedComment = [{...response[0], comments: []}];
+      return formattedComment;
     }),
   deleteComment: publicProcedure
     .input(deleteComment)

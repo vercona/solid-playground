@@ -1,17 +1,18 @@
 import { For, Show, createSignal, type JSX } from "solid-js";
 import { RouterOutputs } from "../utils/api";
 import { calcTimeDifference, getSentTimeMessage } from "../utils/utilFunctions";
-import { submitComment } from "../apiCalls/CommentSectionCalls";
-
-type Comment = RouterOutputs["getPostAndComments"]["comments"][0];
+import { deleteComment, submitComment } from "../apiCalls/CommentSectionCalls";
+import type { Comment as CommentType, PathArray } from "../utils/interfaces";
 
 interface CommentProps {
-    comment: Comment;
-    post_id: string;
+  comment: CommentType;
+  post_id: string;
+  pathArr: PathArray[];
+  addComment: (path: PathArray[], value: any) => void;
 }
 
 const Comment = (props: CommentProps) => {
-  const { comment, post_id } = props;
+  const { comment, post_id, pathArr, addComment } = props;
 
   const [commentText, setCommentText] = createSignal('');
   const [settings, setSettings] = createSignal({
@@ -24,17 +25,29 @@ const Comment = (props: CommentProps) => {
     new Date(comment.created_at)
   );
 
-  const submitReply: JSX.EventHandler<HTMLFormElement, Event> = (e) => {
+  const submitReply: JSX.EventHandler<HTMLFormElement, Event> = async (e) => {
     e.preventDefault();
-    const response = submitComment("e274ca42-560c-49ef-95ab-c10511fb8412", post_id, comment.level + 1, commentText(), comment.comment_id);
-    console.log("comment submission", response);
+    try{
+      const response = await submitComment("e274ca42-560c-49ef-95ab-c10511fb8412", post_id, comment.level + 1, commentText(), comment.comment_id);
+      console.log("respnse", response);
+      // addComment(pathArr, response[0]);
+      setSettings((currentSettings) => ({...currentSettings, displayForm: false }));
+    }catch(err){
+
+    }
   };
 
   const handleCommentInput = (textAreaValue: string) => {
     setCommentText(textAreaValue);
   }
 
+  const handleDeleteComment = () => {
+    const response = deleteComment(comment.comment_id);
+    console.log("delete comment", response);
+  };
+
   console.log("comment obj", comment)
+  // console.log("pathArr", pathArr);
   return (
     <li class="py-5">
       <div class="text-xl">{comment.user.username}</div>
@@ -51,6 +64,30 @@ const Comment = (props: CommentProps) => {
           }
         >
           Reply
+        </button>
+        <button
+          onClick={handleDeleteComment}
+          class="px-2 border-2 mx-2 border-rose-900"
+        >
+          Delete comment
+        </button>
+        <button
+          onClick={() =>
+            addComment(pathArr, {
+              comment_id: "bad05359-daa0-4528-a858-9ce85d1015e6",
+              user: {
+                username: "TESTING USERNAME",
+                user_id: "f47bd701-8b9c-412b-a0a7-4fdce781cdf4",
+              },
+              body: "TESTING COMMENT",
+              created_at: "2023-11-03T23:23:02.031723",
+              level: 9000,
+              comments: [],
+            })
+          }
+          class="px-2 border-2 mx-2 border-rose-900"
+        >
+          Test addcomment
         </button>
       </div>
       <Show when={settings().displayForm}>
@@ -94,7 +131,14 @@ const Comment = (props: CommentProps) => {
       <Show when={settings().isExpanded}>
         <ul class="ml-5">
           <For each={comment.comments}>
-            {(comment) => <Comment comment={comment} post_id={post_id} />}
+            {(comment, index) => (
+              <Comment
+                comment={comment}
+                post_id={post_id}
+                pathArr={[...pathArr, index(), "comments"]}
+                addComment={addComment}
+              />
+            )}
           </For>
         </ul>
       </Show>
