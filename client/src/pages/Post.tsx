@@ -14,11 +14,8 @@ import { Comment as CommentType, PostAndComments, PathArray } from "../utils/int
 
 import { createStore } from "solid-js/store";
 
-
-const Post = () => {
-  const params = useParams();
-  const navigate = useNavigate();
-
+import type { ResourceSource, ResourceFetcher, Resource } from "solid-js";
+function resourceStore<T, S>(watcher:ResourceSource<S>, fetcher:ResourceFetcher<S, T|void, unknown>) {
   const [store, setStoreTmp] = createStore<PostAndComments[]>([]);
   let getStore = (...args: Array<string|number>)=>{ 
     if(!args.length) return store[0] 
@@ -29,11 +26,24 @@ const Post = () => {
   // @ts-ignore breaks typing... maybe just keep the 0...
   let setStore = (...args:Array<any>) => setStoreTmp(0, ...args) //typeof setStoreTmp
 
-  const [ status ] = createResource<void, string>(
-    params.postId,
-    async (v)=>{setStore(await getPostAndComments(v))}
+  const [ status ] = createResource<void, S>(
+    watcher,
+    async (v, r)=>{setStore(await fetcher(v, r))}
   )
 
+  return [getStore, setStore, status] as [
+    (...args: Array<string|number>)=>any,
+    (...args: Array<any>)=>any,
+    Resource<void>
+  ]
+}
+
+const Post = () => {
+  const params = useParams();
+  const navigate = useNavigate();
+
+  let [getStore, setStore, status] = resourceStore<PostAndComments, string>(params.postId, getPostAndComments)
+  
   const addComment = (pathArr: PathArray[], value: CommentType) => {
     if (getStore() && getStore()?.comments) {
       setStore('comments', ...pathArr, [
