@@ -285,12 +285,49 @@ export const routes = router({
     .input(createCommentInput)
     .mutation(async (req) => {
       const input = req.input;
-      const response = await db
-        .insert(comments)
-        .values({ ...input })
-        // .leftJoin(users, eq(comments.user_id, users.user_id))
-        .returning();
-      const formattedComment = [{...response[0], comments: []}];
+      // const response = await db
+      //   .insert(comments)
+      //   .values({ ...input })
+      //   .returning()
+        // .select()
+        // .from(users);
+
+      
+      //OUTPUT Inserted.comment_id, Inserted.user_id, Inserted.post_id, Inserted.level, Inserted.content, Inserted.parent_id, Inserted.likes, Inserted.dislikes, Inserted.created_at
+      // const response = await db.execute(
+      //   sql`
+      //     INSERT INTO comments ( level, parent_id, user_id, post_id, content)
+      //     OUTPUT Inserted.comment_id, Inserted.user_id, Inserted.post_id, Inserted.level, Inserted.content, Inserted.parent_id, Inserted.likes, Inserted.dislikes, Inserted.created_at
+      //     VALUES(${input.level}, ${input.parent_id}, ${input.user_id}, ${input.post_id}, ${input.content});
+      //   `
+      // );
+
+      // SELECT * FROM comment_row c
+      //   LEFT JOIN
+      //   profiles p ON p.user_id = c.user_id
+      const response = await db.execute(
+        sql`
+        with comment_row as (
+          INSERT INTO comments ( level, parent_id, user_id, post_id, content)
+          VALUES(${input.level}, ${input.parent_id}, ${input.user_id}, ${input.post_id}, ${input.content})
+          RETURNING *
+        )
+        SELECT json_build_object(
+          'comment_id', c.comment_id,
+          'user', json_build_object(
+            'username', u.username,
+            'user_id', u.user_id
+          ),
+          'body', c.content,
+          'created_at', c.created_at,
+          'level', c.level,
+          'comments', array[]::varchar[]
+        ) from comment_row c
+            left join profiles u using(user_id)
+        `
+      );
+
+      const formattedComment = [response[0].json_build_object];
       return formattedComment;
     }),
   deleteComment: publicProcedure

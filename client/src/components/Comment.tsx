@@ -1,18 +1,22 @@
-import { For, Show, createSignal, type JSX } from "solid-js";
-import { RouterOutputs } from "../utils/api";
+import { For, Show, createSignal, createEffect } from "solid-js";
+import { destructure } from "@solid-primitives/destructure";
 import { calcTimeDifference, getSentTimeMessage } from "../utils/utilFunctions";
 import { deleteComment, submitComment } from "../apiCalls/CommentSectionCalls";
 import type { Comment as CommentType, PathArray } from "../utils/interfaces";
+import ReplyCommentField from "./ReplyCommentField";
 
 interface CommentProps {
   comment: CommentType;
   post_id: string;
   pathArr: PathArray[];
   addComment: (path: PathArray[], value: any) => void;
+  deleteCommentFromStore: (pathArr: PathArray[], index: number) => void;
+  index: number;
 }
 
 const Comment = (props: CommentProps) => {
-  const { comment, post_id, pathArr, addComment } = props;
+  const { comment, post_id, pathArr } =
+    destructure(props);
 
   const [commentText, setCommentText] = createSignal('');
   const [settings, setSettings] = createSignal({
@@ -22,18 +26,17 @@ const Comment = (props: CommentProps) => {
 
   const timeDifference = calcTimeDifference(
     new Date(),
-    new Date(comment.created_at)
+    new Date(comment().created_at)
   );
 
-  const submitReply: JSX.EventHandler<HTMLFormElement, Event> = async (e) => {
+  const submitReply = async (e: Event) => {
     e.preventDefault();
     try{
-      const response = await submitComment("e274ca42-560c-49ef-95ab-c10511fb8412", post_id, comment.level + 1, commentText(), comment.comment_id);
-      console.log("respnse", response);
-      // addComment(pathArr, response[0]);
+      const response = await submitComment("e274ca42-560c-49ef-95ab-c10511fb8412", post_id(), comment().level + 1, commentText(), comment().comment_id);
+      props.addComment(pathArr(), response[0]);
       setSettings((currentSettings) => ({...currentSettings, displayForm: false }));
     }catch(err){
-
+      console.log("submit err", err)
     }
   };
 
@@ -41,18 +44,23 @@ const Comment = (props: CommentProps) => {
     setCommentText(textAreaValue);
   }
 
-  const handleDeleteComment = () => {
-    const response = deleteComment(comment.comment_id);
-    console.log("delete comment", response);
+  const handleDeleteComment = async () => {
+    const index = pathArr()[pathArr().length - 2];
+    try{
+      if (typeof index === 'number'){
+        await deleteComment(comment().comment_id);
+        props.deleteCommentFromStore(pathArr(), index);
+      }
+    }catch(err){
+      console.log("delete err", err)
+    }
   };
 
-  console.log("comment obj", comment)
-  // console.log("pathArr", pathArr);
   return (
     <li class="py-5">
-      <div class="text-xl">{comment.user.username}</div>
+      <div class="text-xl">{comment().user.username}</div>
       <div>Comment sent {getSentTimeMessage(timeDifference)}</div>
-      <div>{comment.body}</div>
+      <div>{comment().body}</div>
       <div>
         <button
           class="py-2"
@@ -71,7 +79,7 @@ const Comment = (props: CommentProps) => {
         >
           Delete comment
         </button>
-        <button
+        {/* <button
           onClick={() =>
             addComment(pathArr, {
               comment_id: "bad05359-daa0-4528-a858-9ce85d1015e6",
@@ -88,10 +96,24 @@ const Comment = (props: CommentProps) => {
           class="px-2 border-2 mx-2 border-rose-900"
         >
           Test addcomment
-        </button>
+        </button> */}
       </div>
       <Show when={settings().displayForm}>
-        <form onSubmit={submitReply} class="flex flex-col">
+        <ReplyCommentField
+          handleSubmit={submitReply}
+          replyText={commentText()}
+          username={comment().user.username}
+          handleInput={(e) =>
+            handleCommentInput((e.target as HTMLInputElement).value)
+          }
+          handleCancel={() =>
+            setSettings((currentSettings) => ({
+              ...currentSettings,
+              displayForm: false,
+            }))
+          }
+        />
+        {/* <form onSubmit={submitReply} class="flex flex-col">
           <label>Replying to {comment.user.username}</label>
           <textarea
             rows={"4"}
@@ -114,9 +136,9 @@ const Comment = (props: CommentProps) => {
             </button>
             <input class="py-2" type="submit" value={"Submit"} />
           </div>
-        </form>
+        </form> */}
       </Show>
-      <Show when={comment.comments.length !== 0}>
+      <Show when={comment().comments.length !== 0}>
         <button
           onClick={() =>
             setSettings((currentSettings) => ({
@@ -130,13 +152,15 @@ const Comment = (props: CommentProps) => {
       </Show>
       <Show when={settings().isExpanded}>
         <ul class="ml-5">
-          <For each={comment.comments}>
+          <For each={comment().comments}>
             {(comment, index) => (
               <Comment
                 comment={comment}
-                post_id={post_id}
-                pathArr={[...pathArr, index(), "comments"]}
-                addComment={addComment}
+                post_id={post_id()}
+                pathArr={[...pathArr(), index(), "comments"]}
+                addComment={props.addComment}
+                deleteCommentFromStore={props.deleteCommentFromStore}
+                index={index()}
               />
             )}
           </For>

@@ -1,69 +1,151 @@
 // Solid Imports
-import { Show, createResource, ErrorBoundary, For, createEffect } from "solid-js";
+import { Show, createResource, ErrorBoundary, For, createEffect, Signal, createSignal } from "solid-js";
+import type {
+  ResourceSource,
+  ResourceFetcher,
+  InitializedResource,
+  Resource,
+} from "solid-js";
 import { Navigate, useNavigate, useParams } from "@solidjs/router";
+import { createDeepSignal } from "@solid-primitives/resource";
+import { createStore, reconcile, unwrap } from "solid-js/store";
+import type { Store, SetStoreFunction } from "solid-js/store";
 
 // API Imports
-import { getPostAndComments } from "../apiCalls/CommentSectionCalls";
+import { getPostAndComments, submitComment } from "../apiCalls/CommentSectionCalls";
 
 // Local Imports
 import Comment from "../components/Comment";
 import { errorPageUrl } from "../utils/constants";
 import { formatErrorUrl } from "../utils/utilFunctions";
 import { Comment as CommentType, PostAndComments, PathArray } from "../utils/interfaces";
-import { createDeepSignal } from "@solid-primitives/resource";
+import ReplyCommentField from "../components/ReplyCommentField";
+
+function resourceStore<T, S>(watcher:ResourceSource<S>, fetcher:ResourceFetcher<S, T, unknown>, options={}) {
+  const [store, setStore] = createStore<PostAndComments[]>([]);
+
+  function toSignal<T>(v?: T) { 
+    return ([
+      () => store[0],
+      (update: T) => (
+        setStore(0, reconcile(typeof update === "function" ? update(unwrap(store[0])) : v))
+      )
+    ] as Signal<T | undefined>)
+  }
+
+  const [ status, { refetch } ] = createResource<T, S>(
+    watcher,
+    fetcher,
+    { ...options, storage: toSignal }
+  )
+
+  return [status, { mutate: setStore, refetch }] as [Resource<T>, {mutate:  SetStoreFunction<T[]>, refetch: typeof refetch}]
+}
 
 const Post = () => {
   const params = useParams();
   const navigate = useNavigate();
+  const [commentText, setCommentText] = createSignal("");
 
-  const [
-    singlePost,
-    {mutate}
-  ] = createResource<PostAndComments, string>(
+
+  // const [
+  //   singlePost,
+  //   {mutate}
+  // ] = createResource<PostAndComments, string>(
+  //   params.postId,
+  //   getPostAndComments,
+  //   {storage: createDeepSignal}
+  // );
+
+  let [singlePost, { mutate }] = resourceStore<PostAndComments, string>(
     params.postId,
-    getPostAndComments,
-    {storage: createDeepSignal}
+    getPostAndComments
   );
 
   const addComment = (pathArr: PathArray[], value: CommentType) => {
-    if (singlePost() && singlePost()?.comments) {
-      const postCopy = JSON.parse(JSON.stringify(singlePost()!.comments)) as CommentType[];
-      // console.log("postCopy before", postCopy)
-      let changingObj: CommentType[] | CommentType = postCopy;
+    // if (singlePost() && singlePost()?.comments) {
+    //   const postCopy = JSON.parse(JSON.stringify(singlePost()!.comments)) as CommentType[];
+    //   // console.log("postCopy before", postCopy)
+    //   let changingObj: CommentType[] | CommentType = postCopy;
 
-      // console.log("changingObj", changingObj);
-      for (let i = 0; i <= pathArr.length - 1; i++) {
-        var elem = pathArr[i];
-        // if(i === 0 && elem === 'comments'){
-        //   const newObj = changingObj['comments'] as CommentType[];
-        //   changingObj = changingObj[elem];
-        // }
-        if (typeof elem === "number" && Array.isArray(changingObj)) {
-          changingObj = changingObj[elem];
-        } else if (
-          elem === "comments" &&
-          "comments" in changingObj
-        ) {
-          changingObj = changingObj[elem];
-        }
-        // if (!changingObj[elem]) changingObj[elem] = {};
-        // changingObj = changingObj[elem];
-      }
+    //   // console.log("changingObj", changingObj);
+    //   for (let i = 0; i <= pathArr.length - 1; i++) {
+    //     var elem = pathArr[i];
+    //     // if(i === 0 && elem === 'comments'){
+    //     //   const newObj = changingObj['comments'] as CommentType[];
+    //     //   changingObj = changingObj[elem];
+    //     // }
+    //     if (typeof elem === "number" && Array.isArray(changingObj)) {
+    //       changingObj = changingObj[elem];
+    //     } else if (
+    //       elem === "comments" &&
+    //       "comments" in changingObj
+    //     ) {
+    //       changingObj = changingObj[elem];
+    //     }
+    //     // if (!changingObj[elem]) changingObj[elem] = {};
+    //     // changingObj = changingObj[elem];
+    //   }
 
-      // console.log("pathArr[pathArr.length - 2]", pathArr[pathArr.length - 2]);
-      // console.log("Array.isArray(changingObj)", Array.isArray(changingObj));
-      if (Array.isArray(changingObj)) {
-        changingObj.push(value);
-        mutate((currentPost) => ({ ...currentPost!, comments: postCopy}));
-      }
+    //   // console.log("pathArr[pathArr.length - 2]", pathArr[pathArr.length - 2]);
+    //   // console.log("Array.isArray(changingObj)", Array.isArray(changingObj));
+    //   if (Array.isArray(changingObj)) {
+    //     changingObj.push(value);
+    //     mutate((currentPost) => ({ ...currentPost!, comments: postCopy}));
+    //   }
       
-      // console.log("path", pathArr);
-      // console.log("value", value);
-      // console.log("changeObj", changingObj);
-      // console.log("postCopy", postCopy);
-    }
+    //   // console.log("path", pathArr);
+    //   // console.log("value", value);
+    //   // console.log("changeObj", changingObj);
+    //   // console.log("postCopy", postCopy);
+    // }
     // changingObj[pathArr[pathArr.length - 1]] = value;
+    if (singlePost() && singlePost()?.comments) {
+      mutate(0, "comments", ...(pathArr as []), (existing: CommentType[]) => [
+        ...existing,
+        value,
+      ]);
+    }
   };
+
+  const deleteCommentFromStore = (pathArr: PathArray[], index: number) => {
+    console.log("call???")
+    const parentCommentPathArr = pathArr.slice(0, -2);
+    if (singlePost() && singlePost()?.comments) {
+      mutate(
+        0,
+        "comments",
+        ...(parentCommentPathArr as []),
+        (existing: CommentType[]) => {
+          const copyArr = [...existing];
+          copyArr.splice(index, 1);
+          return [...copyArr];
+        }
+      );
+    }
+  }
+
+  // const submitReply = async (e: Event) => {
+  //   e.preventDefault();
+  //   try {
+  //     if(singlePost() && singlePost()?.post){
+  //       const response = await submitComment(
+  //         "e274ca42-560c-49ef-95ab-c10511fb8412",
+  //         singlePost()!.post.post_id,
+  //         0,
+  //         commentText(),
+  //       );
+  //       console.log("respnse", response);
+  //       addComment(pathArr, response[0]);
+  //       setSettings((currentSettings) => ({
+  //         ...currentSettings,
+  //         displayForm: false,
+  //       }));
+  //     }
+  //   } catch (err) {
+  //     console.log("submit err", err);
+  //   }
+  // };
 
   createEffect(() => {
     // console.log("singlePost()", singlePost());
@@ -89,12 +171,21 @@ const Post = () => {
           <Show when={singlePost() && singlePost()?.post}>
             <div class="text-xl font-medium">{singlePost()!.post.title}</div>
             <div>{singlePost()!.post.description}</div>
+            {/* <ReplyCommentField replyText={commentText()} username={singlePost()?.post.}/> */}
           </Show>
 
           <Show when={singlePost() && singlePost()?.comments}>
             <ul class="ml-5">
               <For each={singlePost()!.comments}>
-                {(comment, index) => <Comment comment={comment} post_id={singlePost()!.post.post_id} pathArr={[index(), "comments"]} addComment={addComment}/>}
+                {(comment, index) => 
+                  <Comment
+                    comment={comment}
+                    post_id={singlePost()!.post.post_id}
+                    pathArr={[index(), "comments"]}
+                    addComment={addComment}
+                    deleteCommentFromStore={deleteCommentFromStore}
+                    index={index()}
+                  />}
               </For>
             </ul>
           </Show>

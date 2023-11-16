@@ -38,21 +38,21 @@ const fetchQueries = async () => {
     // const response = await trpc.getPost.query({
     //   id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
     // });
-    // const response = await trpc.createComment.mutate({
-    //   level: 2,
-    //   parent_id: "c0395394-365c-4f1b-b079-2efd01cb751c",
-    //   user_id: SallyId,
-    //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
-    //   content: "Testing deletion",
-    // });
+    const response = await trpc.createComment.mutate({
+      level: 2,
+      parent_id: "c0395394-365c-4f1b-b079-2efd01cb751c",
+      user_id: SallyId,
+      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+      content: "Testing deletion",
+    });
     // const response = await trpc.getPostAndComments.query({
     //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
     // });
-    const response = await trpc.deleteComment.mutate({
-      comment_id: "b0a6bd43-9889-47d1-943e-0d2acd76119c",
-    });
+    // const response = await trpc.deleteComment.mutate({
+    //   comment_id: "59004931-dd9e-49b8-882c-2af43d9d19b3",
+    // });
     console.log("response", response);
-    // console.log("response", response.comments[0].user);
+    // console.log("response", response[0].json_build_object.comments);
     // console.log("response2", response[0]);
 
   } catch (err) {
@@ -62,4 +62,12 @@ const fetchQueries = async () => {
   // console.log("test???")
 };
 
-fetchQueries();
+const deleteQuery = async (id: string) => {
+  const response = await trpc.deleteComment.mutate({
+    comment_id: id,
+  });
+  console.log("response", response);
+}
+
+// fetchQueries();
+deleteQuery("16df33cb-46a9-48bd-8562-8a3aafdcf7a4");
