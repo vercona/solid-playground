@@ -1,5 +1,4 @@
-import { For, Show, createSignal, createEffect } from "solid-js";
-import { destructure } from "@solid-primitives/destructure";
+import { For, Show, createSignal, createEffect, Component } from "solid-js";
 import { calcTimeDifference, getSentTimeMessage } from "../utils/utilFunctions";
 import { deleteComment, submitComment } from "../apiCalls/CommentSectionCalls";
 import type { Comment as CommentType, PathArray } from "../utils/interfaces";
@@ -14,10 +13,7 @@ interface CommentProps {
   index: number;
 }
 
-const Comment = (props: CommentProps) => {
-  const { comment, post_id, pathArr } =
-    destructure(props);
-
+const Comment: Component<CommentProps> = ({ comment, post_id, pathArr, ...props }) => {
   const [commentText, setCommentText] = createSignal('');
   const [settings, setSettings] = createSignal({
     isExpanded: false,
@@ -26,14 +22,14 @@ const Comment = (props: CommentProps) => {
 
   const timeDifference = calcTimeDifference(
     new Date(),
-    new Date(comment().created_at)
+    new Date(comment.created_at)
   );
 
   const submitReply = async (e: Event) => {
     e.preventDefault();
     try{
-      const response = await submitComment("e274ca42-560c-49ef-95ab-c10511fb8412", post_id(), comment().level + 1, commentText(), comment().comment_id);
-      props.addComment(pathArr(), response[0]);
+      const response = await submitComment("e274ca42-560c-49ef-95ab-c10511fb8412", post_id, comment.level + 1, commentText(), comment.comment_id);
+      props.addComment(pathArr, response[0]);
       setSettings((currentSettings) => ({...currentSettings, displayForm: false }));
     }catch(err){
       console.log("submit err", err)
@@ -45,11 +41,11 @@ const Comment = (props: CommentProps) => {
   }
 
   const handleDeleteComment = async () => {
-    const index = pathArr()[pathArr().length - 2];
+    const index = pathArr[pathArr.length - 2];
     try{
       if (typeof index === 'number'){
-        await deleteComment(comment().comment_id);
-        props.deleteCommentFromStore(pathArr(), index);
+        await deleteComment(comment.comment_id);
+        props.deleteCommentFromStore(pathArr, index);
       }
     }catch(err){
       console.log("delete err", err)
@@ -58,9 +54,9 @@ const Comment = (props: CommentProps) => {
 
   return (
     <li class="py-5">
-      <div class="text-xl">{comment().user.username}</div>
+      <div class="text-xl">{comment.user.username}</div>
       <div>Comment sent {getSentTimeMessage(timeDifference)}</div>
-      <div>{comment().body}</div>
+      <div>{comment.body}</div>
       <div>
         <button
           class="py-2"
@@ -102,7 +98,7 @@ const Comment = (props: CommentProps) => {
         <ReplyCommentField
           handleSubmit={submitReply}
           replyText={commentText()}
-          username={comment().user.username}
+          username={comment.user.username}
           handleInput={(e) =>
             handleCommentInput((e.target as HTMLInputElement).value)
           }
@@ -138,7 +134,7 @@ const Comment = (props: CommentProps) => {
           </div>
         </form> */}
       </Show>
-      <Show when={comment().comments.length !== 0}>
+      <Show when={comment.comments.length !== 0}>
         <button
           onClick={() =>
             setSettings((currentSettings) => ({
@@ -152,12 +148,12 @@ const Comment = (props: CommentProps) => {
       </Show>
       <Show when={settings().isExpanded}>
         <ul class="ml-5">
-          <For each={comment().comments}>
+          <For each={comment.comments}>
             {(comment, index) => (
               <Comment
                 comment={comment}
-                post_id={post_id()}
-                pathArr={[...pathArr(), index(), "comments"]}
+                post_id={post_id}
+                pathArr={[...pathArr, index(), "comments"]}
                 addComment={props.addComment}
                 deleteCommentFromStore={props.deleteCommentFromStore}
                 index={index()}
