@@ -111,33 +111,18 @@ const Post = () => {
     }
   };
 
+  // Soft Delete
   const deleteCommentFromStore = (pathArr: PathArray[], index: number) => {
-    const parentCommentPathArr = pathArr.slice(0, -2);
+    const pathToComment = pathArr.slice(0, -1)
     if (singlePost() && singlePost()?.comments) {
       mutate(
-        0,
-        "comments",
-        ...(parentCommentPathArr as []),
-        (existing: CommentType[]) => {
-          const copyArr = [...existing];
-          const replaceItem = [...existing][index];
-          replaceItem.is_deleted = true;
-          replaceItem.body = "This comment is deleted"
-          // console.log("replace item", replaceItem)
-          // copyArr.splice(index, 1);
-          // copyArr.splice(index, 1, replaceItem);
-          const firstHalf = copyArr.slice(0, index);
-          // const secondHalf
-          // copyArr.splice(index, 1, replaceItem);
-          // copyArr[index].is_deleted = true;
-          // copyArr[index].body = "deleted post";
-          // copyArr[index].user.username = "no user";
-          console.log("copyArr test", [...firstHalf, replaceItem]);
-          // return [...copyArr];
-          // return [...firstHalf, replaceItem];
-          return [...copyArr, replaceItem];
-        }
-      );
+        0, "comments", ...(pathToComment as []),
+        (existing) => ({
+          ...existing, 
+          body: "This comment is deleted",
+          user: { user_id: null, username: "Anon" }
+        })
+      )
     }
   }
 
