@@ -46,6 +46,9 @@ const Post = () => {
   const params = useParams();
   const navigate = useNavigate();
   const [commentText, setCommentText] = createSignal("");
+  const [settings, setSettings] = createSignal({
+    displayForm: false,
+  });
 
 
   // const [
@@ -109,7 +112,6 @@ const Post = () => {
   };
 
   const deleteCommentFromStore = (pathArr: PathArray[], index: number) => {
-    console.log("call???")
     const parentCommentPathArr = pathArr.slice(0, -2);
     if (singlePost() && singlePost()?.comments) {
       mutate(
@@ -118,37 +120,55 @@ const Post = () => {
         ...(parentCommentPathArr as []),
         (existing: CommentType[]) => {
           const copyArr = [...existing];
-          copyArr.splice(index, 1);
-          return [...copyArr];
+          const replaceItem = [...existing][index];
+          replaceItem.is_deleted = true;
+          replaceItem.body = "This comment is deleted"
+          // console.log("replace item", replaceItem)
+          // copyArr.splice(index, 1);
+          // copyArr.splice(index, 1, replaceItem);
+          const firstHalf = copyArr.slice(0, index);
+          // const secondHalf
+          // copyArr.splice(index, 1, replaceItem);
+          // copyArr[index].is_deleted = true;
+          // copyArr[index].body = "deleted post";
+          // copyArr[index].user.username = "no user";
+          console.log("copyArr test", [...firstHalf, replaceItem]);
+          // return [...copyArr];
+          // return [...firstHalf, replaceItem];
+          return [...copyArr, replaceItem];
         }
       );
     }
   }
 
-  // const submitReply = async (e: Event) => {
-  //   e.preventDefault();
-  //   try {
-  //     if(singlePost() && singlePost()?.post){
-  //       const response = await submitComment(
-  //         "e274ca42-560c-49ef-95ab-c10511fb8412",
-  //         singlePost()!.post.post_id,
-  //         0,
-  //         commentText(),
-  //       );
-  //       console.log("respnse", response);
-  //       addComment(pathArr, response[0]);
-  //       setSettings((currentSettings) => ({
-  //         ...currentSettings,
-  //         displayForm: false,
-  //       }));
-  //     }
-  //   } catch (err) {
-  //     console.log("submit err", err);
-  //   }
-  // };
+  const submitReply = async (e: Event) => {
+    e.preventDefault();
+    try {
+      if(singlePost() && singlePost()?.post){
+        const response = await submitComment(
+          "e274ca42-560c-49ef-95ab-c10511fb8412",
+          singlePost()!.post.post_id,
+          0,
+          commentText(),
+        );
+        console.log("respnse", response);
+        addComment([], response[0]);
+        setSettings((currentSettings) => ({
+          ...currentSettings,
+          displayForm: false,
+        }));
+      }
+    } catch (err) {
+      console.log("submit err", err);
+    }
+  };
+
+  const handleCommentInput = (textAreaValue: string) => {
+    setCommentText(textAreaValue);
+  };
 
   createEffect(() => {
-    // console.log("singlePost()", singlePost());
+    console.log("singlePost()", singlePost());
     // console.log("singlePost isPending", singlePost.loading);
     // console.log("singlePost latest", singlePost.latest);
   });
@@ -171,13 +191,39 @@ const Post = () => {
           <Show when={singlePost() && singlePost()?.post}>
             <div class="text-xl font-medium">{singlePost()!.post.title}</div>
             <div>{singlePost()!.post.description}</div>
-            {/* <ReplyCommentField replyText={commentText()} username={singlePost()?.post.}/> */}
+            <button
+              class="py-2"
+              onClick={() =>
+                setSettings((currentSettings) => ({
+                  ...currentSettings,
+                  displayForm: !currentSettings.displayForm,
+                }))
+              }
+            >
+              Reply
+            </button>
+            <Show when={settings().displayForm}>
+              <ReplyCommentField
+                replyText={commentText()}
+                username={singlePost()!.post.user.username}
+                handleSubmit={submitReply}
+                handleCancel={() =>
+                  setSettings((currentSettings) => ({
+                    ...currentSettings,
+                    displayForm: false,
+                  }))
+                }
+                handleInput={(e) =>
+                  handleCommentInput((e.target as HTMLInputElement).value)
+                }
+              />
+            </Show>
           </Show>
 
           <Show when={singlePost() && singlePost()?.comments}>
             <ul class="ml-5">
               <For each={singlePost()!.comments}>
-                {(comment, index) => 
+                {(comment, index) => (
                   <Comment
                     comment={comment}
                     post_id={singlePost()!.post.post_id}
@@ -185,7 +231,8 @@ const Post = () => {
                     addComment={addComment}
                     deleteCommentFromStore={deleteCommentFromStore}
                     index={index()}
-                  />}
+                  />
+                )}
               </For>
             </ul>
           </Show>

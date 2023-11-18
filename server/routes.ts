@@ -51,12 +51,13 @@ export const publicProcedure = t.procedure;
 interface Comments {
   comment_id: string;
   user: {
-    username: string;
-    user_id: string;
+    username: string | null;
+    user_id: string | null;
   };
-  body: string;
+  body: string | null;
   created_at: string;
   level: number;
+  is_deleted: boolean;
   comments: Comments[];
 }
 
@@ -64,13 +65,20 @@ const CommentsSchema: z.ZodType<Comments> = z.lazy(() =>
   z.object({
     comment_id: z.string(),
     user: z.object({
-      username: z.string(),
-      user_id: z.string()
+      username: z.string().nullable(),
+      user_id: z.string().nullable()
     }),
-    body: z.string(),
+    body: z.string().nullable(),
     created_at: z.string(),
     level: z.number(),
+    is_deleted: z.boolean(),
     comments: z.array(CommentsSchema),
+  }).refine((comment) => {
+    if(comment.is_deleted){
+      return (comment.body === null && comment.user.user_id === null && comment.user.username === null)
+    }else {
+      return (typeof comment.body === 'string' && typeof comment.user.user_id === 'string' && typeof comment.user.username === 'string')
+    }
   })
 );
 
@@ -224,9 +232,18 @@ export const routes = router({
       //   WHERE c.parent_id is null AND
       //   c.post_id = ${post_id}
       // `;
-    const getAllCommentsQuery = sql`
+      const getAllCommentsQuery = sql`
       select json_build_object(
-        'posts', p,
+        'post', json_build_object(
+          'post_id', p.post_id,
+          'user', json_build_object(
+            'user_id', u.user_id,
+            'username', u.username
+          ),
+          'title', p.title,
+          'description', p.description,
+          'created_at', p.created_at
+        ),
         'comments', parentComment
       )
       from (
@@ -235,11 +252,12 @@ export const routes = router({
             comment_tree(comment_id)
             order by c.created_at asc
           ), '[]') as comments
-        from comments c
+        from comments_view c
         WHERE c.parent_id is null AND
         c.post_id = ${post_id}
       ) as parentComment
       LEFT JOIN posts p ON p.post_id = ${post_id}
+      LEFT JOIN profiles u ON u.user_id = p.user_id
     `;
 
       // 'post', json_build_object(
@@ -252,7 +270,8 @@ export const routes = router({
       // try{
       const response: any = await db.execute(getAllCommentsQuery);
 
-      if (!response[0].json_build_object.posts){
+      console.log("response", response);
+      if (!response[0].json_build_object.post) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Post not found",
@@ -260,7 +279,7 @@ export const routes = router({
       }
 
       const formattedResponse = {
-        post: response[0].json_build_object.posts,
+        post: response[0].json_build_object.post,
         comments: response[0].json_build_object.comments.comments,
       };
       return formattedResponse;
@@ -289,10 +308,9 @@ export const routes = router({
       //   .insert(comments)
       //   .values({ ...input })
       //   .returning()
-        // .select()
-        // .from(users);
+      // .select()
+      // .from(users);
 
-      
       //OUTPUT Inserted.comment_id, Inserted.user_id, Inserted.post_id, Inserted.level, Inserted.content, Inserted.parent_id, Inserted.likes, Inserted.dislikes, Inserted.created_at
       // const response = await db.execute(
       //   sql`
@@ -330,13 +348,21 @@ export const routes = router({
       const formattedComment = [response[0].json_build_object];
       return formattedComment;
     }),
-  deleteComment: publicProcedure
-    .input(deleteComment)
-    .mutation(async (req) => {
-      const input = req.input;
-      const response = await db.delete(comments).where(eq(comments.comment_id, input.comment_id)).returning({ deleted_id: comments.comment_id });
-      return response;
-    })
+  deleteComment: publicProcedure.input(deleteComment).mutation(async (req) => {
+    const input = req.input;
+    // const response = await db.delete(comments).where(eq(comments.comment_id, input.comment_id)).returning({ deleted_id: comments.comment_id });
+    const response = await db
+      .update(comments)
+      .set({ is_deleted: true })
+      .where(eq(comments.comment_id, input.comment_id))
+      .returning({ deleted_id: comments.comment_id });
+    return response;
+  }),
+  removeCommentEntirely: publicProcedure.input(deleteComment).mutation(async (req) => {
+    const input = req.input;
+    const response = await db.delete(comments).where(eq(comments.comment_id, input.comment_id)).returning({ deleted_id: comments.comment_id });
+    return response;
+  }),
 });
 
 // export default routes;

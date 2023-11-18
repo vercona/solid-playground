@@ -1,6 +1,6 @@
 interface ReplyCommentFieldProps {
   handleSubmit: (e: Event) => void;
-  username: string;
+  username: string | null;
   replyText: string;
   handleInput: (e: InputEvent) => void;
   handleCancel: () => void;
@@ -9,7 +9,7 @@ interface ReplyCommentFieldProps {
 const ReplyCommentField = (props: ReplyCommentFieldProps) => {
   return (
     <form onSubmit={props.handleSubmit} class="flex flex-col">
-      <label>Replying to {props.username}</label>
+      <label>{props.username ? `Replying to ${props.username}` : "Responding to a deleted comment"}</label>
       <textarea
         rows={"4"}
         cols={"50"}

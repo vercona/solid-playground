@@ -48,7 +48,7 @@ const Comment = (props: CommentProps) => {
     const index = pathArr()[pathArr().length - 2];
     try{
       if (typeof index === 'number'){
-        await deleteComment(comment().comment_id);
+        // await deleteComment(comment().comment_id);
         props.deleteCommentFromStore(pathArr(), index);
       }
     }catch(err){
@@ -56,11 +56,20 @@ const Comment = (props: CommentProps) => {
     }
   };
 
+  createEffect(() => {
+    console.log("comment().is_deleted", comment().is_deleted);
+  });
+
+  console.log("this comment", comment())
   return (
     <li class="py-5">
-      <div class="text-xl">{comment().user.username}</div>
-      <div>Comment sent {getSentTimeMessage(timeDifference)}</div>
-      <div>{comment().body}</div>
+      <div class="text-xl">
+        {!comment().is_deleted ? comment().user.username : "Deleted"}
+      </div>
+      {!comment().is_deleted && <div>Comment sent {getSentTimeMessage(timeDifference)}</div>}
+      <div>
+        {!comment().is_deleted ? comment().body : "This comment has been deleted"}
+      </div>
       <div>
         <button
           class="py-2"
