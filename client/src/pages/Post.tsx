@@ -111,6 +111,7 @@ const Post = () => {
     }
   };
 
+  // Soft Delete
   const deleteCommentFromStore = (pathArr: PathArray[], index: number) => {
     const pathToComment = pathArr.slice(0, -1);
     if (singlePost() && singlePost()?.comments) {
