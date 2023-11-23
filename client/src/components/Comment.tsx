@@ -48,7 +48,7 @@ const Comment = (props: CommentProps) => {
     const index = pathArr()[pathArr().length - 2];
     try{
       if (typeof index === 'number'){
-        // await deleteComment(comment().comment_id);
+        await deleteComment(comment().comment_id);
         props.deleteCommentFromStore(pathArr(), index);
       }
     }catch(err){
@@ -66,9 +66,13 @@ const Comment = (props: CommentProps) => {
       <div class="text-xl">
         {!comment().is_deleted ? comment().user.username : "Deleted"}
       </div>
-      {!comment().is_deleted && <div>Comment sent {getSentTimeMessage(timeDifference)}</div>}
+      {!comment().is_deleted && (
+        <div>Comment sent {getSentTimeMessage(timeDifference)}</div>
+      )}
       <div>
-        {!comment().is_deleted ? comment().body : "This comment has been deleted"}
+        {!comment().is_deleted
+          ? comment().body
+          : "This comment has been deleted"}
       </div>
       <div>
         <button
@@ -82,12 +86,14 @@ const Comment = (props: CommentProps) => {
         >
           Reply
         </button>
-        <button
-          onClick={handleDeleteComment}
-          class="px-2 border-2 mx-2 border-rose-900"
-        >
-          Delete comment
-        </button>
+        <Show when={!comment().is_deleted}>
+          <button
+            onClick={handleDeleteComment}
+            class="px-2 border-2 mx-2 border-rose-900"
+          >
+            Delete comment
+          </button>
+        </Show>
         {/* <button
           onClick={() =>
             addComment(pathArr, {

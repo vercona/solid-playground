@@ -92,6 +92,48 @@
       "when": 1700183326011,
       "tag": "0012_hesitant_gorilla_man",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1700524773992,
+      "tag": "0013_nappy_scorpion",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1700526465715,
+      "tag": "0014_fuzzy_killmonger",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "5",
+      "when": 1700526903426,
+      "tag": "0015_greedy_sugar_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "5",
+      "when": 1700527548638,
+      "tag": "0016_puzzling_captain_stacy",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1700527863009,
+      "tag": "0017_modern_chimera",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1700605358566,
+      "tag": "0018_tricky_meltdown",
+      "breakpoints": true
     }
   ]
 }

@@ -58,6 +58,8 @@ interface Comments {
   created_at: string;
   level: number;
   is_deleted: boolean;
+  comment_num: number;
+  maximum_child_comment_num: number | null;
   comments: Comments[];
 }
 
@@ -72,12 +74,22 @@ const CommentsSchema: z.ZodType<Comments> = z.lazy(() =>
     created_at: z.string(),
     level: z.number(),
     is_deleted: z.boolean(),
+    comment_num: z.number(),
+    maximum_child_comment_num: z.number().nullable(),
     comments: z.array(CommentsSchema),
   }).refine((comment) => {
     if(comment.is_deleted){
-      return (comment.body === null && comment.user.user_id === null && comment.user.username === null)
+      return (
+        comment.body === null &&
+        comment.user.user_id === null &&
+        comment.user.username === null
+      );
     }else {
-      return (typeof comment.body === 'string' && typeof comment.user.user_id === 'string' && typeof comment.user.username === 'string')
+      return (
+        typeof comment.body === "string" &&
+        typeof comment.user.user_id === "string" &&
+        typeof comment.user.username === "string"
+      );
     }
   })
 );
@@ -172,13 +184,13 @@ export const routes = router({
       // const getAllCommentsQuery = sql`WITH RECURSIVE t(chain,author_un,text,id) AS (
       //   SELECT ARRAY[comment_id], username, content, comment_id, post_id
       //   FROM comments
-      //   INNER JOIN "user" USING (user_id)
+      //   INNER JOIN profiles USING (user_id)
       //   UNION ALL
       //     SELECT t.chain||c.comment_id, username, c.content, c.comment_id
       //     FROM t
       //     INNER JOIN comments AS c
       //       ON (t.id = c.parent_id)
-      //     INNER JOIN "user"
+      //     INNER JOIN profiles
       //       USING (user_id)
       //   )
       //   SELECT *
@@ -232,57 +244,120 @@ export const routes = router({
       //   WHERE c.parent_id is null AND
       //   c.post_id = ${post_id}
       // `;
-      const getAllCommentsQuery = sql`
-      select json_build_object(
-        'post', json_build_object(
-          'post_id', p.post_id,
-          'user', json_build_object(
-            'user_id', u.user_id,
-            'username', u.username
-          ),
-          'title', p.title,
-          'description', p.description,
-          'created_at', p.created_at
-        ),
-        'comments', parentComment
-      )
-      from (
-        select
-          coalesce(json_agg(
-            comment_tree(comment_id)
-            order by c.created_at asc
-          ), '[]') as comments
-        from comments_view c
-        WHERE c.parent_id is null AND
-        c.post_id = ${post_id}
-      ) as parentComment
-      LEFT JOIN posts p ON p.post_id = ${post_id}
-      LEFT JOIN profiles u ON u.user_id = p.user_id
-    `;
 
-      // 'post', json_build_object(
-      //   'post_id', p.post_id,
-      //   'title', p.title,
-      //   'description', p.description,
-      //   'created_at', p.created_at
-      // ),
+
+      const getAllCommentsQuery = sql`
+        select json_build_object(
+          'post', json_build_object(
+            'post_id', p.post_id,
+            'user', json_build_object(
+              'user_id', u.user_id,
+              'username', u.username
+            ),
+            'title', p.title,
+            'description', p.description,
+            'created_at', p.created_at
+          ),
+          'comments', parentComment
+        )
+        from (
+          select
+            coalesce(json_agg(
+              comment_tree(comment_id, 0, 4)
+              order by c.created_at asc
+            ), '[]') as comments
+          from comments_view c
+          WHERE c.parent_id is null AND
+          c.post_id = ${post_id}
+        ) as parentComment
+        LEFT JOIN posts p ON p.post_id = ${post_id}
+        LEFT JOIN profiles u ON u.user_id = p.user_id
+      `;
+
+    // const getAllCommentsQuery = sql`
+    // WITH RECURSIVE comments_cte (
+    //   comment_id,
+    //   path,
+    //   content,
+    //   user_id,
+    //   id_path
+    // ) AS (
+    //   SELECT
+    //     comment_id,
+    //     '',
+    //     content,
+    //     user_id,
+    //     id_path
+    //   FROM
+    //     comments
+    //   WHERE
+    //     parent_id IS NULL
+    //   UNION ALL
+    //   SELECT
+    //     r.comment_id,
+    //     concat(path, '/', r.parent_id),
+    //     r.content,
+    //     r.user_id,
+    //     r.id_path
+    //   FROM
+    //     comments r
+    //     JOIN comments_cte ON comments_cte.comment_id = r.parent_id
+    // )
+    // SELECT
+    //   *
+    // FROM
+    //   comments_cte;
+    // `;
+
+    // const getAllCommentsQuery = sql`
+    // WITH base_comments AS (
+    //   SELECT
+    //     *
+    //   FROM
+    //     comments
+    //   WHERE
+    //     id_path IS NULL
+    //     AND post_id = ${post_id}
+    // ) (
+    //   SELECT
+    //     *
+    //   FROM
+    //     comments replies
+    //   WHERE
+    //     replies.id_path ~ ANY (
+    //       SELECT
+    //         comment_id::text
+    //       FROM
+    //         base_comments
+    //     )
+    //   AND comment_num < 10      
+    //   GROUP BY comment_id
+    //   )
+    //   UNION ALL
+    //   SELECT
+    //     *
+    //   FROM
+    //     base_comments
+    // `;
+
 
       // try{
       const response: any = await db.execute(getAllCommentsQuery);
 
       console.log("response", response);
-      if (!response[0].json_build_object.post) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Post not found",
-        });
-      }
+      // if (!response[0].json_build_object.post) {
+      //   throw new TRPCError({
+      //     code: "NOT_FOUND",
+      //     message: "Post not found",
+      //   });
+      // }
 
       const formattedResponse = {
         post: response[0].json_build_object.post,
         comments: response[0].json_build_object.comments.comments,
       };
       return formattedResponse;
+      // return response;
       // }catch(err){
       //   console.log("err", err);
       //   return err;

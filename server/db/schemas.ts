@@ -12,7 +12,13 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
+import { customType } from "drizzle-orm/pg-core";
 
+const ltree = customType<{ data: string }>({
+  dataType() {
+    return 'ltree';
+  },
+});
 // const qb = new QueryBuilder();
 
 export const users = pgTable("profiles", {
@@ -33,6 +39,7 @@ export const posts = pgTable("posts", {
 
 export const comments = pgTable('comments', {
     comment_id: uuid('comment_id').primaryKey().defaultRandom(),
+    comment_num: integer('comment_num'),
     level: integer("level").notNull(),
     parent_id: uuid('parent_id'),
     user_id: uuid('user_id').references(() => users.user_id),
@@ -41,7 +48,8 @@ export const comments = pgTable('comments', {
     content: text('content'),
     likes: integer('likes').default(0),
     dislikes: integer('dislikes').default(0),
-    is_deleted: boolean('is_deleted').notNull().default(false)
+    is_deleted: boolean('is_deleted').notNull().default(false),
+    id_path: text('id_path')
 });
 
 
