@@ -3,7 +3,8 @@ import { eq, isNull, sql } from "drizzle-orm";
 import { TRPCError, initTRPC } from "@trpc/server";
 import { ZodError, z } from "zod";
 import { db } from "./db";
-import { comments, createCommentInput, createPostInput, createUserInput, deleteComment, getAllCommentsInput, getPost, getPostInput, posts, users } from "./db/schemas";
+import { comments, commentsTableName, createCommentInput, createPostInput, createUserInput, deleteComment, getAllCommentsInput, getPost, getPostInput, posts, postsTableName, users, usersTableName } from "./db/schemas";
+import { kyselyDb } from "./db/kyselyDb";
 
 export const t = initTRPC.create({
   errorFormatter({ shape, error }) {
@@ -96,35 +97,48 @@ const CommentsSchema: z.ZodType<Comments> = z.lazy(() =>
 
 export const routes = router({
   getComment: publicProcedure.query(async () => {
-    const allComments = await db.select().from(comments);
+    const allComments = await kyselyDb
+      .selectFrom(commentsTableName)
+      .selectAll()
+      .execute();
     return allComments;
   }),
   getAllUsers: publicProcedure.query(async () => {
-    const allUsers = await db.select().from(users);
+    const allUsers = await kyselyDb
+      .selectFrom(usersTableName)
+      .selectAll()
+      .execute();
     return allUsers;
   }),
   createUser: publicProcedure.input(createUserInput).mutation(async (req) => {
     const input = req.input;
-    const response = await db
-      .insert(users)
+    const response = await kyselyDb
+      .insertInto(usersTableName)
       .values({ ...input })
-      .returning();
+      .returningAll()
+      .executeTakeFirstOrThrow()
     return response;
   }),
   getPost: publicProcedure.input(getPostInput).query(async (req) => {
     const { post_id } = req.input;
-    const allUsers = await db
-      .select()
-      .from(posts)
-      .where(eq(posts.post_id, post_id));
-    return allUsers;
+    const postRes = await kyselyDb
+      .selectFrom(postsTableName)
+      .selectAll()
+      .where("post_id", "=", post_id)
+      .execute();
+    return postRes;
   }),
   createPost: publicProcedure.input(createPostInput).mutation(async (req) => {
     const input = req.input;
-    const response = await db
-      .insert(posts)
-      .values({ ...input })
-      .returning();
+    const response = await kyselyDb
+      .insertInto(postsTableName)
+      .values({
+        user_id: input.user_id,
+        title: input.title,
+        description: input.description,
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
     return response;
   }),
   getPostAndComments: publicProcedure
@@ -245,7 +259,6 @@ export const routes = router({
       //   c.post_id = ${post_id}
       // `;
 
-
       const getAllCommentsQuery = sql`
         select json_build_object(
           'post', json_build_object(
@@ -274,72 +287,71 @@ export const routes = router({
         LEFT JOIN profiles u ON u.user_id = p.user_id
       `;
 
-    // const getAllCommentsQuery = sql`
-    // WITH RECURSIVE comments_cte (
-    //   comment_id,
-    //   path,
-    //   content,
-    //   user_id,
-    //   id_path
-    // ) AS (
-    //   SELECT
-    //     comment_id,
-    //     '',
-    //     content,
-    //     user_id,
-    //     id_path
-    //   FROM
-    //     comments
-    //   WHERE
-    //     parent_id IS NULL
-    //   UNION ALL
-    //   SELECT
-    //     r.comment_id,
-    //     concat(path, '/', r.parent_id),
-    //     r.content,
-    //     r.user_id,
-    //     r.id_path
-    //   FROM
-    //     comments r
-    //     JOIN comments_cte ON comments_cte.comment_id = r.parent_id
-    // )
-    // SELECT
-    //   *
-    // FROM
-    //   comments_cte;
-    // `;
+      // const getAllCommentsQuery = sql`
+      // WITH RECURSIVE comments_cte (
+      //   comment_id,
+      //   path,
+      //   content,
+      //   user_id,
+      //   id_path
+      // ) AS (
+      //   SELECT
+      //     comment_id,
+      //     '',
+      //     content,
+      //     user_id,
+      //     id_path
+      //   FROM
+      //     comments
+      //   WHERE
+      //     parent_id IS NULL
+      //   UNION ALL
+      //   SELECT
+      //     r.comment_id,
+      //     concat(path, '/', r.parent_id),
+      //     r.content,
+      //     r.user_id,
+      //     r.id_path
+      //   FROM
+      //     comments r
+      //     JOIN comments_cte ON comments_cte.comment_id = r.parent_id
+      // )
+      // SELECT
+      //   *
+      // FROM
+      //   comments_cte;
+      // `;
 
-    // const getAllCommentsQuery = sql`
-    // WITH base_comments AS (
-    //   SELECT
-    //     *
-    //   FROM
-    //     comments
-    //   WHERE
-    //     id_path IS NULL
-    //     AND post_id = ${post_id}
-    // ) (
-    //   SELECT
-    //     *
-    //   FROM
-    //     comments replies
-    //   WHERE
-    //     replies.id_path ~ ANY (
-    //       SELECT
-    //         comment_id::text
-    //       FROM
-    //         base_comments
-    //     )
-    //   AND comment_num < 10      
-    //   GROUP BY comment_id
-    //   )
-    //   UNION ALL
-    //   SELECT
-    //     *
-    //   FROM
-    //     base_comments
-    // `;
-
+      // const getAllCommentsQuery = sql`
+      // WITH base_comments AS (
+      //   SELECT
+      //     *
+      //   FROM
+      //     comments
+      //   WHERE
+      //     id_path IS NULL
+      //     AND post_id = ${post_id}
+      // ) (
+      //   SELECT
+      //     *
+      //   FROM
+      //     comments replies
+      //   WHERE
+      //     replies.id_path ~ ANY (
+      //       SELECT
+      //         comment_id::text
+      //       FROM
+      //         base_comments
+      //     )
+      //   AND comment_num < 10
+      //   GROUP BY comment_id
+      //   )
+      //   UNION ALL
+      //   SELECT
+      //     *
+      //   FROM
+      //     base_comments
+      // `;
 
       // try{
       const response: any = await db.execute(getAllCommentsQuery);
@@ -426,18 +438,30 @@ export const routes = router({
   deleteComment: publicProcedure.input(deleteComment).mutation(async (req) => {
     const input = req.input;
     // const response = await db.delete(comments).where(eq(comments.comment_id, input.comment_id)).returning({ deleted_id: comments.comment_id });
-    const response = await db
-      .update(comments)
+    // const response = await db
+    //   .update(comments)
+    //   .set({ is_deleted: true })
+    //   .where(eq(comments.comment_id, input.comment_id))
+    //   .returning({ deleted_id: comments.comment_id });
+    
+    const response = await kyselyDb
+      .updateTable(commentsTableName)
       .set({ is_deleted: true })
-      .where(eq(comments.comment_id, input.comment_id))
-      .returning({ deleted_id: comments.comment_id });
+      .where("comment_id", "=", input.comment_id)
+      .returning("comment_id")
+      .executeTakeFirstOrThrow()
     return response;
   }),
-  removeCommentEntirely: publicProcedure.input(deleteComment).mutation(async (req) => {
-    const input = req.input;
-    const response = await db.delete(comments).where(eq(comments.comment_id, input.comment_id)).returning({ deleted_id: comments.comment_id });
-    return response;
-  }),
+  // removeCommentEntirely: publicProcedure
+  //   .input(deleteComment)
+  //   .mutation(async (req) => {
+  //     const input = req.input;
+  //     const response = await db
+  //       .delete(comments)
+  //       .where(eq(comments.comment_id, input.comment_id))
+  //       .returning({ deleted_id: comments.comment_id });
+  //     return response;
+  //   }),
 });
 
 // export default routes;

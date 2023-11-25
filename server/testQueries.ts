@@ -17,7 +17,8 @@ const fetchQueries = async () => {
   const BobId = "f47bd701-8b9c-412b-a0a7-4fdce781cdf4";
   const BillyId = "b607935e-07a2-4558-8c55-bc1937dcbd74";
   const SallyId = "cf5bacfd-9aa6-406d-9db0-b65bf02ad491";
-  const SaitamaId = "e274ca42-560c-49ef-95ab-c10511fb8412";
+  const SaitamaId = 'e274ca42-560c-49ef-95ab-c10511fb8412';
+  const Baam = "9f1b96dc-fce8-4751-ac9a-ab06c966a826";
 
   // async function fetchQueries() {
   //   const response = await fetch("http://localhost:8080/");
@@ -29,14 +30,15 @@ const fetchQueries = async () => {
   //   console.log(formattedResponse);
   try {
     // const response = await trpc.getComment.query();
-    // const response = await trpc.createUser.mutate({ username: "Saitama" });
+    // const response = await trpc.createUser.mutate({ username: "Baam" });
     // const response = await trpc.getAllUsers.query();
     // const response = await trpc.createPost.mutate({
-    //   title: "Post by Billy",
-    //   userId: "b607935e-07a2-4558-8c55-bc1937dcbd74",
+    //   title: "Third post with Kysley",
+    //   description: "This post was created using Kysley",
+    //   user_id: SaitamaId,
     // });
     // const response = await trpc.getPost.query({
-    //   id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+    //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
     // });
     // const response = await trpc.createComment.mutate({
     //   level: 2,
@@ -44,13 +46,13 @@ const fetchQueries = async () => {
     //   user_id: SallyId,
     //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
     //   content: "Testing deletion",
+    // // });
+    // const response = await trpc.getPostAndComments.query({
+    //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
     // });
-    const response = await trpc.getPostAndComments.query({
-      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+    const response = await trpc.deleteComment.mutate({
+      comment_id: "9f1b96dc-fce8-4751-ac9a-ab06c966a826",
     });
-    // const response = await trpc.deleteComment.mutate({
-    //   comment_id: "59004931-dd9e-49b8-882c-2af43d9d19b3",
-    // });
     console.log("response", response);
     // console.log("response deep", response.comments[0].comments);
 
@@ -157,8 +159,8 @@ const fetchQueries = async () => {
     // console.log("response2", response[0]);
   } catch (err) {
     console.log("error data", err.data);
-    console.log("error data deep", err.data.zodError.fieldErrors);
-    console.log("error message", err.message);
+    // console.log("error data deep", err.data.zodError.fieldErrors);
+    // console.log("error message", err.message);
   }
   // console.log("test???")
 };

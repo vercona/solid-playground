@@ -19,15 +19,20 @@ const ltree = customType<{ data: string }>({
     return 'ltree';
   },
 });
+
+export const usersTableName = "profiles";
+export const postsTableName = "posts";
+export const commentsTableName = "comments";
+
 // const qb = new QueryBuilder();
 
-export const users = pgTable("profiles", {
+export const users = pgTable(usersTableName, {
   user_id: uuid("user_id").primaryKey().defaultRandom(),
   username: text("username").unique().notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const posts = pgTable("posts", {
+export const posts = pgTable(postsTableName, {
   post_id: uuid("post_id").primaryKey().defaultRandom(),
   user_id: uuid("user_id")
     .references(() => users.user_id)
@@ -37,7 +42,7 @@ export const posts = pgTable("posts", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const comments = pgTable('comments', {
+export const comments = pgTable(commentsTableName, {
     comment_id: uuid('comment_id').primaryKey().defaultRandom(),
     comment_num: integer('comment_num'),
     level: integer("level").notNull(),
