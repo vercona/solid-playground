@@ -24,3 +24,33 @@ export const kyselyDb = new Kysely<KyselyDatabase>({
     })
   }),
 });
+
+
+// interface Profiles {
+//   user_id: ColumnType<string, string | undefined, string | undefined>;
+//   username: ColumnType<string, string, string>;
+//   created_at: ColumnType<Date, Date | undefined, Date | undefined>;
+// }
+
+// interface Posts {
+//   user_id: ColumnType<string, string, string>;
+//   created_at: ColumnType<Date, Date | undefined, Date | undefined>;
+//   post_id: ColumnType<string, string | undefined, string | undefined>;
+// }
+
+// interface Comments {
+//   comment_id: ColumnType<string, string | undefined, string | undefined>;
+//   comment_num: ColumnType<
+//     number | null,
+//     number | null | undefined,
+//     number | null | undefined
+//   >;
+//   user_id: ColumnType<string, string, string>;
+//   post_id: ColumnType<string, string | undefined, string | undefined>;
+// }
+
+// interface Database {
+//   profiles: Profiles;
+//   posts: Posts;
+//   comments: Comments;
+// }

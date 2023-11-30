@@ -1,5 +1,7 @@
 // import { FastifyInstance } from "fastify";
-import { eq, isNull, sql } from "drizzle-orm";
+import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
+import { sql } from "kysely";
+import { eq, isNull, sql as rawDrizzleSqlQuery } from "drizzle-orm";
 import { TRPCError, initTRPC } from "@trpc/server";
 import { ZodError, z } from "zod";
 import { db } from "./db";
@@ -143,220 +145,196 @@ export const routes = router({
   }),
   getPostAndComments: publicProcedure
     .input(getAllCommentsInput)
-    .output(
-      z.object({
-        post: getPost,
-        comments: z.array(CommentsSchema),
-      })
-    )
+    // .output(
+    //   z.object({
+    //     post: getPost,
+    //     comments: z.array(CommentsSchema),
+    //   })
+    // )
     .query(async (req) => {
       const { post_id } = req.input;
-      //     const getAllCommentsQuery = sql`create or replace function comment_tree (comment_id uuid) returns json as $$
-      //   select json_build_object(
-      //     'comment_id', c.comment_id,
-      //     'user', json_build_object(
-      //       'username', u.username,
-      //       'user_id', u.user_id
-      //     ),
-      //     'body', c.content,
-      //     'created_at', c.created_at,
-      //     'comments', children
-      //   )
-      //   from comments c
-      //     left join profiles u using(user_id),
-      //     lateral (
-      //       select
-      //         coalesce(json_agg(
-      //           comment_tree(comments.comment_id)
-      //           order by created_at asc
-      //         ), '[]') as children
-      //       from (
-      //         select * from (
-      //           SELECT *, ROW_NUMBER() OVER (ORDER BY created_at DESC) AS row_num FROM comments
-      //         ) as subquery
-      //         -- WHERE row_num = 3
-      //         -- CASE WHEN level > 1 WHERE row_num = 3
-      //         -- select
-      //         --   created_at,
-      //         --   user_id,
-      //         --   comment_id,
-      //         --   content,
-      //         --   parent_id,
-      //         --   row_number() OVER() AS rownum
-      //         -- from comments
-      //         -- WHERE rownum < 1
-      //         -- LIMIT CASE WHEN 1 = 1 THEN 1 END
-      //         -- where level < 2
-      //         -- limit 2
-      //       ) as comments
-      //       where parent_id = c.comment_id
-      //     ) as get_children
-      //   where
-      //     c.comment_id = comment_tree.comment_id
-      // $$ language sql stable;`;
 
-      // const getAllCommentsQuery = sql`WITH RECURSIVE t(chain,author_un,text,id) AS (
-      //   SELECT ARRAY[comment_id], username, content, comment_id, post_id
-      //   FROM comments
-      //   INNER JOIN profiles USING (user_id)
-      //   UNION ALL
-      //     SELECT t.chain||c.comment_id, username, c.content, c.comment_id
-      //     FROM t
-      //     INNER JOIN comments AS c
-      //       ON (t.id = c.parent_id)
-      //     INNER JOIN profiles
-      //       USING (user_id)
-      //   )
-      //   SELECT *
-      //   FROM t;
+      // const getAllCommentsQuery = rawDrizzleSqlQuery`
+      //   select
+      //     TO_JSON(parentComment) as comments,
+      //     TO_JSON(p) as posts,
+      //     TO_JSON(u) as users
+      //   from (
+      //     select
+      //       coalesce(json_agg(
+      //         comment_tree(comment_id, 0, 4)
+      //         order by c.created_at asc
+      //       ), '[]') as comments
+      //     from comments_view c
+      //     WHERE c.parent_id is null AND
+      //     c.post_id = ${post_id}
+      //   ) as parentComment
+      //   LEFT JOIN posts p ON p.post_id = ${post_id}
+      //   LEFT JOIN profiles u ON u.user_id = p.user_id
       // `;
 
-      // const getAllCommentsQuery = sql`
-      //   WITH RECURSIVE t(parent_id, comment_id, content,  level)
-      //   AS (
-      //     SELECT parent_id, comment_id, content,  0
-      //     FROM comments
-      //     WHERE parent_id IS NULL
-      //     UNION ALL
-      //       SELECT comments.parent_id, comments.comment_id, comments.content, t.level+1
-      //       FROM t
-      //       JOIN comments
-      //         ON (comments.parent_id = t.comment_id)
-      //   )
-      //   SELECT * FROM t;
-      // `;
-
-      // const getAllCommentsQuery = sql`
-      //   SELECT
-      //       pst.post_id
-      //       , pstusr.username
-      //       , pst.title
-      //       , pst.created_at
-      //       , cmt.comment_id
-      //       , cmt.parent_id
-      //       , cmtusr.username
-      //       , cmt.content
-      //       , cmt.created_at
-      //       , cmt.level
-      //   FROM
-      //       comments cmt
-      //       LEFT JOIN "user" as cmtusr ON cmt.user_id = cmtusr.user_id
-      //       LEFT JOIN post as pst ON cmt.post_id = pst.post_id
-      //       LEFT JOIN "user" as pstusr ON pst.user_id = pstusr.user_id
-      //   ORDER BY
-      //       cmt.created_at
-      // `;
-
-      // const getAllCommentsQuery = sql`SELECT comment_tree('e0257a7a-8f56-4b72-beb3-85093faa9f1c');`;
-
-      // const getAllCommentsQuery = sql`select
-      //     coalesce(json_agg(
-      //       comment_tree(comment_id)
-      //       order by c.created_at asc
-      //     ), '[]') as comments
-      //   from comments c
-      //   WHERE c.parent_id is null AND
-      //   c.post_id = ${post_id}
-      // `;
-
-      const getAllCommentsQuery = sql`
-        select json_build_object(
-          'post', json_build_object(
-            'post_id', p.post_id,
-            'user', json_build_object(
-              'user_id', u.user_id,
-              'username', u.username
-            ),
-            'title', p.title,
-            'description', p.description,
-            'created_at', p.created_at
-          ),
-          'comments', parentComment
-        )
-        from (
-          select
-            coalesce(json_agg(
-              comment_tree(comment_id, 0, 4)
-              order by c.created_at asc
-            ), '[]') as comments
-          from comments_view c
-          WHERE c.parent_id is null AND
-          c.post_id = ${post_id}
-        ) as parentComment
-        LEFT JOIN posts p ON p.post_id = ${post_id}
-        LEFT JOIN profiles u ON u.user_id = p.user_id
-      `;
-
-      // const getAllCommentsQuery = sql`
-      // WITH RECURSIVE comments_cte (
-      //   comment_id,
-      //   path,
-      //   content,
-      //   user_id,
-      //   id_path
-      // ) AS (
-      //   SELECT
-      //     comment_id,
-      //     '',
-      //     content,
-      //     user_id,
-      //     id_path
-      //   FROM
-      //     comments
-      //   WHERE
-      //     parent_id IS NULL
-      //   UNION ALL
-      //   SELECT
-      //     r.comment_id,
-      //     concat(path, '/', r.parent_id),
-      //     r.content,
-      //     r.user_id,
-      //     r.id_path
-      //   FROM
-      //     comments r
-      //     JOIN comments_cte ON comments_cte.comment_id = r.parent_id
-      // )
-      // SELECT
-      //   *
-      // FROM
-      //   comments_cte;
-      // `;
-
-      // const getAllCommentsQuery = sql`
-      // WITH base_comments AS (
-      //   SELECT
-      //     *
-      //   FROM
-      //     comments
-      //   WHERE
-      //     id_path IS NULL
-      //     AND post_id = ${post_id}
-      // ) (
-      //   SELECT
-      //     *
-      //   FROM
-      //     comments replies
-      //   WHERE
-      //     replies.id_path ~ ANY (
-      //       SELECT
-      //         comment_id::text
-      //       FROM
-      //         base_comments
-      //     )
-      //   AND comment_num < 10
-      //   GROUP BY comment_id
-      //   )
-      //   UNION ALL
-      //   SELECT
-      //     *
-      //   FROM
-      //     base_comments
-      // `;
+ 
 
       // try{
-      const response: any = await db.execute(getAllCommentsQuery);
 
-      console.log("response", response);
+      // const response: any = await db.execute(getAllCommentsQuery);
+
+      // const parentCommentsSelect: any = sql`TO_JSON(parent_comment) as comments`;
+      // const postsSelect: any = sql`TO_JSON(posts) as posts`;
+      // const usersSelect: any = sql`TO_JSON(profiles) as users`;
+
+      // const response = await kyselyDb
+      //   .selectFrom([
+      //     kyselyDb
+      //       .selectFrom("comments")
+      //       .select(({ fn, val, ref }) => [
+      //         sql`comment_tree(comments.comment_id, 0, 4)`.as(
+      //           "recursiveComments"
+      //         ),
+      //       ])
+      //       .orderBy("created_at", "asc")
+      //       .where("comments.parent_id", "is", null)
+      //       .as("parent_comment"),
+      //   ])
+      //   .leftJoin("posts", (join) => join.on("posts.post_id", "=", post_id))
+      //   .leftJoin("profiles as users", (join) =>
+      //     join.onRef("users.user_id", "=", "posts.user_id")
+      //   )
+      //   // .selectAll()
+      //   // .select([parentCommentsSelect, postsSelect, usersSelect])
+      //   .select(["parent_comment.recursiveComments", "posts.title", "posts.description", "posts.created_at", "users.user_id", "users.username"])
+      //   .execute();
+      // .compile();
+
+      // const parentCommentsSelect: any = sql`TO_JSON(parent_comment) as comments`;
+      // const postsSelect: any = sql`TO_JSON(posts) as posts`;
+      // const usersSelect: any = sql`TO_JSON(profiles) as users`;
+
+      // const response = await kyselyDb
+      //   .selectFrom([
+      //     kyselyDb
+      //       .selectFrom("comments")
+      //       .select(({ fn, val, ref }) => [
+      //         sql`coalesce(json_agg(
+      //         comment_tree(comment_id, 0, 4)
+      //         order by comments.created_at asc
+      //       ), '[]')`.as("comments"),
+      //       ])
+      //       .where("comments.parent_id", "is", null)
+      //       .as("parent_comment"),
+      //   ])
+      //   .leftJoin("posts", (join) => join.on("posts.post_id", "=", post_id))
+      //   .leftJoin("profiles", (join) =>
+      //     join.onRef("profiles.user_id", "=", "posts.user_id")
+      //   )
+      //   .select([parentCommentsSelect, postsSelect, usersSelect])
+      //   // .selectAll()
+      //   .execute();
+
+      const getAllCommentsQuery = rawDrizzleSqlQuery`
+        WITH RECURSIVE t(user_id, username, content, comment_id, level, comment_num) AS (
+          SELECT user_id, username, content, comment_id, level, comment_num
+          FROM comments
+          INNER JOIN profiles USING (user_id)
+          WHERE parent_id IS NULL
+          UNION ALL
+            SELECT users.user_id, users.username, c.content, c.comment_id, c.level, c.comment_num
+            FROM t
+            INNER JOIN comments AS c
+              ON (t.comment_id = c.parent_id) AND (c.comment_num < 5)
+            INNER JOIN profiles AS users
+              ON (users.user_id = c.user_id)
+        )
+        SELECT *
+        FROM t;
+      `;
+
+      const response = await kyselyDb
+        .withRecursive(
+          "t(user_id, username, comment_id, level, parent_id, comment_num, created_at, is_deleted, max_children_comment_num)",
+          (db) =>
+            db
+              .selectFrom("comments")
+              .innerJoin(
+                "profiles as users",
+                "users.user_id",
+                "comments.user_id"
+              )
+              .leftJoinLateral(
+                (db) =>
+                  db
+                    .selectFrom("comments as child_comments")
+                    .select((eb) =>
+                      eb.fn.max("comment_num").as("max_children_comment_num")
+                    )
+                    .whereRef(
+                      "child_comments.parent_id",
+                      "=",
+                      "comments.comment_id"
+                    )
+                    .as("get_children"),
+                (join) => join.onTrue()
+              )
+              .select((eb) => [
+                "users.user_id",
+                "username",
+                "comment_id",
+                "level",
+                "parent_id",
+                "comment_num",
+                "comments.created_at",
+                "is_deleted",
+                "max_children_comment_num",
+              ])
+              .where("parent_id", "is", null)
+              // .where("comment_num", "<", 2)
+              .unionAll((db) =>
+                db
+                  .selectFrom("t")
+                  .innerJoin(
+                    "comments as c",
+                    (join) =>
+                      join
+                        .onRef("t.comment_id", "=", "c.parent_id")
+                        .on("c.comment_num", "<", 10)
+                    // .on("c.level", "<", 2)
+                  )
+                  .innerJoin("profiles as users", "users.user_id", "c.user_id")
+                  .leftJoinLateral(
+                    (db) =>
+                      db
+                        .selectFrom("comments as child_comments")
+                        .select((eb) =>
+                          eb.fn
+                            .max("comment_num")
+                            .as("max_children_comment_num")
+                        )
+                        // .whereRef("parent_id", "=", "t.comment_id")
+                        .whereRef(
+                          "child_comments.parent_id",
+                          "=",
+                          "c.comment_id"
+                        )
+                        .as("get_children"),
+                    (join) => join.onTrue()
+                  )
+                  .select([
+                    "users.user_id",
+                    "users.username",
+                    "c.comment_id",
+                    "c.level",
+                    "c.parent_id",
+                    "c.comment_num",
+                    "c.created_at",
+                    "c.is_deleted",
+                    "get_children.max_children_comment_num",
+                  ])
+              )
+        )
+        .selectFrom("t")
+        .selectAll()
+        .execute();
+
       // if (!response[0].json_build_object.post) {
       //   throw new TRPCError({
       //     code: "NOT_FOUND",
@@ -364,12 +342,23 @@ export const routes = router({
       //   });
       // }
 
-      const formattedResponse = {
-        post: response[0].json_build_object.post,
-        comments: response[0].json_build_object.comments.comments,
-      };
-      return formattedResponse;
-      // return response;
+      // const formattedResponse = {
+      //   post: response[0].json_build_object.post,
+      //   comments: response[0].json_build_object.comments.comments,
+      // };
+      // const innerResponse = response[0];
+      // const formattedResponse = {
+      //   post: {
+      //     ...innerResponse.posts,
+      //     users: {
+      //       user_id: innerResponse.users.user_id,
+      //       username: innerResponse.users.username,
+      //     },
+      //   },
+      //   comments: innerResponse.comments.comments,
+      // };
+      // return formattedResponse;
+      return response;
       // }catch(err){
       //   console.log("err", err);
       //   return err;
@@ -377,7 +366,7 @@ export const routes = router({
 
       // const response = db
       //   .select({
-      //     comments: sql`
+      //     comments: rawDrizzleSqlQuery`
       //     coalesce(json_agg(
       //       comment_tree(comment_id)
       //       order by comments.created_at asc
@@ -390,7 +379,8 @@ export const routes = router({
   createComment: publicProcedure
     .input(createCommentInput)
     .mutation(async (req) => {
-      const input = req.input;
+      // const input = req.input;
+      const { parent_id, level, user_id, post_id, content } = req.input;
       // const response = await db
       //   .insert(comments)
       //   .values({ ...input })
@@ -400,7 +390,7 @@ export const routes = router({
 
       //OUTPUT Inserted.comment_id, Inserted.user_id, Inserted.post_id, Inserted.level, Inserted.content, Inserted.parent_id, Inserted.likes, Inserted.dislikes, Inserted.created_at
       // const response = await db.execute(
-      //   sql`
+      //   rawDrizzleSqlQuery`
       //     INSERT INTO comments ( level, parent_id, user_id, post_id, content)
       //     OUTPUT Inserted.comment_id, Inserted.user_id, Inserted.post_id, Inserted.level, Inserted.content, Inserted.parent_id, Inserted.likes, Inserted.dislikes, Inserted.created_at
       //     VALUES(${input.level}, ${input.parent_id}, ${input.user_id}, ${input.post_id}, ${input.content});
@@ -410,30 +400,61 @@ export const routes = router({
       // SELECT * FROM comment_row c
       //   LEFT JOIN
       //   profiles p ON p.user_id = c.user_id
-      const response = await db.execute(
-        sql`
-        with comment_row as (
-          INSERT INTO comments ( level, parent_id, user_id, post_id, content)
-          VALUES(${input.level}, ${input.parent_id}, ${input.user_id}, ${input.post_id}, ${input.content})
-          RETURNING *
-        )
-        SELECT json_build_object(
-          'comment_id', c.comment_id,
-          'user', json_build_object(
-            'username', u.username,
-            'user_id', u.user_id
-          ),
-          'body', c.content,
-          'created_at', c.created_at,
-          'level', c.level,
-          'comments', array[]::varchar[]
-        ) from comment_row c
-            left join profiles u using(user_id)
-        `
-      );
+      // const response = await db.execute(
+      //   rawDrizzleSqlQuery`
+      //   with comment_row as (
+      //     INSERT INTO comments ( level, parent_id, user_id, post_id, content)
+      //     VALUES(${input.level}, ${input.parent_id}, ${input.user_id}, ${input.post_id}, ${input.content})
+      //     RETURNING *
+      //   )
+      //   SELECT json_build_object(
+      //     'comment_id', c.comment_id,
+      //     'user', json_build_object(
+      //       'username', u.username,
+      //       'user_id', u.user_id
+      //     ),
+      //     'body', c.content,
+      //     'created_at', c.created_at,
+      //     'level', c.level,
+      //     'comments', array[]::varchar[]
+      //   ) from comment_row c
+      //       left join profiles u using(user_id)
+      //   `
+      // );
 
-      const formattedComment = [response[0].json_build_object];
+      const response = await kyselyDb
+        .with('comment_row', (withQuery) => withQuery
+          .insertInto("comments")
+          .values({
+            level,
+            parent_id,
+            user_id,
+            post_id,
+            content
+          })
+          .returning(['comment_id', 'content', 'level', 'created_at', 'user_id'])
+        ).selectFrom('comment_row')
+        .leftJoin('profiles as users', (join) => join.onRef("users.user_id", '=', 'comment_row.user_id'))
+        .select(['comment_id', "content", "level", "comment_row.created_at", "users.user_id", "users.username"])
+        .execute()
+
+      const innerResponse = response[0];
+      const formattedComment = [
+        {
+          comment_id: innerResponse.comment_id,
+          user: {
+            user_id: innerResponse.user_id,
+            username: innerResponse.username,
+          },
+          body: innerResponse.content,
+          created_at: innerResponse.created_at,
+          level: innerResponse.level,
+          comments: [],
+        },
+      ];
+      // const formattedComment = [response[0].json_build_object];
       return formattedComment;
+      // return response;
     }),
   deleteComment: publicProcedure.input(deleteComment).mutation(async (req) => {
     const input = req.input;
@@ -449,19 +470,25 @@ export const routes = router({
       .set({ is_deleted: true })
       .where("comment_id", "=", input.comment_id)
       .returning("comment_id")
-      .executeTakeFirstOrThrow()
+      .execute()
     return response;
   }),
-  // removeCommentEntirely: publicProcedure
-  //   .input(deleteComment)
-  //   .mutation(async (req) => {
-  //     const input = req.input;
-  //     const response = await db
-  //       .delete(comments)
-  //       .where(eq(comments.comment_id, input.comment_id))
-  //       .returning({ deleted_id: comments.comment_id });
-  //     return response;
-  //   }),
+  removeCommentEntirely: publicProcedure
+    .input(deleteComment)
+    .mutation(async (req) => {
+      const input = req.input;
+      // const response = await db
+      //   .delete(comments)
+      //   .where(eq(comments.comment_id, input.comment_id))
+      //   .returning({ comment_id: comments.comment_id });
+      // return response;
+      const response = await kyselyDb
+        .deleteFrom("comments")
+        .where('comments.comment_id', '=', input.comment_id)
+        .returning("comment_id")
+        .execute()
+      return response;
+    }),
 });
 
 // export default routes;

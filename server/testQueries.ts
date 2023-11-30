@@ -18,7 +18,7 @@ const fetchQueries = async () => {
   const BillyId = "b607935e-07a2-4558-8c55-bc1937dcbd74";
   const SallyId = "cf5bacfd-9aa6-406d-9db0-b65bf02ad491";
   const SaitamaId = 'e274ca42-560c-49ef-95ab-c10511fb8412';
-  const Baam = "9f1b96dc-fce8-4751-ac9a-ab06c966a826";
+  const Baam = "05aaaae2-cfb3-4c0b-9431-f0dc451c4b22";
 
   // async function fetchQueries() {
   //   const response = await fetch("http://localhost:8080/");
@@ -43,18 +43,20 @@ const fetchQueries = async () => {
     // const response = await trpc.createComment.mutate({
     //   level: 2,
     //   parent_id: "c0395394-365c-4f1b-b079-2efd01cb751c",
-    //   user_id: SallyId,
+    //   user_id: Baam,
     //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
-    //   content: "Testing deletion",
-    // // });
-    // const response = await trpc.getPostAndComments.query({
-    //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+    //   content: "Testing deletion with Baam",
     // });
-    const response = await trpc.deleteComment.mutate({
-      comment_id: "9f1b96dc-fce8-4751-ac9a-ab06c966a826",
+    const response = await trpc.getPostAndComments.query({
+      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
     });
+    // const response = await trpc.deleteComment.mutate({
+    //   comment_id: "9f1b96dc-fce8-4751-ac9a-ab06c966a826",
+    // });
     console.log("response", response);
-    // console.log("response deep", response.comments[0].comments);
+    // console.log("sql query", response.sql);
+    // console.log("response arr", response[0].comments);
+    // console.log("response deep", response[0].comments);
 
     // console.log("response 0", response[0].json_build_object.comments.comments);
     // console.log("response deep", response[0].json_build_object.comments.comments[0].comments);
@@ -166,11 +168,11 @@ const fetchQueries = async () => {
 };
 
 const deleteQuery = async (id: string) => {
-  const response = await trpc.deleteComment.mutate({
+  const response = await trpc.removeCommentEntirely.mutate({
     comment_id: id,
   });
   console.log("response", response);
 }
 
 fetchQueries();
-// deleteQuery("16df33cb-46a9-48bd-8562-8a3aafdcf7a4");
+// deleteQuery("72526561-a3f2-4990-84b1-363ed2e60aab");
