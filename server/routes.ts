@@ -1,13 +1,8 @@
 //@ts-nocheck
-// import { FastifyInstance } from "fastify";
-import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
-import { sql, SelectQueryBuilder, QueryCreator, AliasedSelectQueryBuilder } from "kysely";
-import { ExpressionBuilder, TableExpression } from 'kysely'
-import { eq, isNull, sql as rawDrizzleSqlQuery } from "drizzle-orm";
-import { TRPCError, initTRPC } from "@trpc/server";
+import { SelectQueryBuilder } from "kysely";
+import { initTRPC } from "@trpc/server";
 import { ZodError, z } from "zod";
-import { db } from "./db";
-import { comments, commentsTableName, createCommentInput, createPostInput, createUserInput, deleteComment, getAllCommentsInput, getPost, getPostInput, posts, postsTableName, users, usersTableName } from "./db/schemas";
+import { commentsTableName, createCommentInput, createPostInput, createUserInput, deleteComment, getAllCommentsInput, getPostInput, postsTableName, usersTableName } from "./db/schemas";
 import { kyselyDb, KyselyDatabase } from "./db/kyselyDb";
 import { comments_view } from "./db/views";
 
@@ -24,42 +19,14 @@ export const t = initTRPC.create({
   },
 });
 
-// interface Comments {
-//   user: string;
-// }
-// const insertUser = async (user: string) => {
-//   return db.insert(commentsSchema).values({user});
-// };
-
-// async function routes(fastify: FastifyInstance) {
-//   fastify.get("/", async () => {
-//     const allUsers = await db.select().from(commentsSchema);
-//     console.log("test now", allUsers);
-//     return { hello: "world" };
-//   });
-//   fastify.post<{Body: string}>("/addUser", async (request) => {
-//     // const allUsers = await db.select().from(applications);
-//     // console.log("test", allUsers);
-//     // const { } = request.body;
-//     const formattedBody: Comments = JSON.parse(request.body);
-//     console.log("typeof", typeof formattedBody);
-//     console.log("formattedBody", formattedBody);
-//     const user = insertUser(formattedBody.user);
-//     return { add: "user", user };
-//   });
-// }
-
-// export default routes;
 
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
 interface Comments {
   comment_id: string;
-  user: {
-    username: string | null;
-    user_id: string | null;
-  };
+  username: string | null;
+  user_id: string | null;
   body: string | null;
   created_at: string;
   level: number;
@@ -148,143 +115,9 @@ export const routes = router({
   }),
   getPostAndComments: publicProcedure
     .input(getAllCommentsInput)
-    // .output(
-    //   z.object({
-    //     post: getPost,
-    //     comments: z.array(CommentsSchema),
-    //   })
-    // )
     .query(async (req) => {
       const { post_id } = req.input;
 
-      // const getAllCommentsQuery = rawDrizzleSqlQuery`
-      //   select
-      //     TO_JSON(parentComment) as comments,
-      //     TO_JSON(p) as posts,
-      //     TO_JSON(u) as users
-      //   from (
-      //     select
-      //       coalesce(json_agg(
-      //         comment_tree(comment_id, 0, 4)
-      //         order by c.created_at asc
-      //       ), '[]') as comments
-      //     from comments_view c
-      //     WHERE c.parent_id is null AND
-      //     c.post_id = ${post_id}
-      //   ) as parentComment
-      //   LEFT JOIN posts p ON p.post_id = ${post_id}
-      //   LEFT JOIN profiles u ON u.user_id = p.user_id
-      // `;
-
- 
-
-      // try{
-
-      // const response: any = await db.execute(getAllCommentsQuery);
-
-      // const parentCommentsSelect: any = sql`TO_JSON(parent_comment) as comments`;
-      // const postsSelect: any = sql`TO_JSON(posts) as posts`;
-      // const usersSelect: any = sql`TO_JSON(profiles) as users`;
-
-      // const response = await kyselyDb
-      //   .selectFrom([
-      //     kyselyDb
-      //       .selectFrom("comments")
-      //       .select(({ fn, val, ref }) => [
-      //         sql`comment_tree(comments.comment_id, 0, 4)`.as(
-      //           "recursiveComments"
-      //         ),
-      //       ])
-      //       .orderBy("created_at", "asc")
-      //       .where("comments.parent_id", "is", null)
-      //       .as("parent_comment"),
-      //   ])
-      //   .leftJoin("posts", (join) => join.on("posts.post_id", "=", post_id))
-      //   .leftJoin("profiles as users", (join) =>
-      //     join.onRef("users.user_id", "=", "posts.user_id")
-      //   )
-      //   // .selectAll()
-      //   // .select([parentCommentsSelect, postsSelect, usersSelect])
-      //   .select(["parent_comment.recursiveComments", "posts.title", "posts.description", "posts.created_at", "users.user_id", "users.username"])
-      //   .execute();
-      // .compile();
-
-      // const parentCommentsSelect: any = sql`TO_JSON(parent_comment) as comments`;
-      // const postsSelect: any = sql`TO_JSON(posts) as posts`;
-      // const usersSelect: any = sql`TO_JSON(profiles) as users`;
-
-      // const response = await kyselyDb
-      //   .selectFrom([
-      //     kyselyDb
-      //       .selectFrom("comments")
-      //       .select(({ fn, val, ref }) => [
-      //         sql`coalesce(json_agg(
-      //         comment_tree(comment_id, 0, 4)
-      //         order by comments.created_at asc
-      //       ), '[]')`.as("comments"),
-      //       ])
-      //       .where("comments.parent_id", "is", null)
-      //       .as("parent_comment"),
-      //   ])
-      //   .leftJoin("posts", (join) => join.on("posts.post_id", "=", post_id))
-      //   .leftJoin("profiles", (join) =>
-      //     join.onRef("profiles.user_id", "=", "posts.user_id")
-      //   )
-      //   .select([parentCommentsSelect, postsSelect, usersSelect])
-      //   // .selectAll()
-      //   .execute();
-
-      // const getAllCommentsQuery = rawDrizzleSqlQuery`
-      //   WITH RECURSIVE t(user_id, username, content, comment_id, level, comment_num) AS (
-      //     SELECT user_id, username, content, comment_id, level, comment_num
-      //     FROM comments
-      //     INNER JOIN profiles USING (user_id)
-      //     WHERE parent_id IS NULL
-      //     UNION ALL
-      //       SELECT users.user_id, users.username, c.content, c.comment_id, c.level, c.comment_num
-      //       FROM t
-      //       INNER JOIN comments AS c
-      //         ON (t.comment_id = c.parent_id) AND (c.comment_num < 5)
-      //       INNER JOIN profiles AS users
-      //         ON (users.user_id = c.user_id)
-      //   )
-      //   SELECT *
-      //   FROM t;
-      // `;
-
-
-      let returnCols;
-
-      // type Test = QueryCreator<
-      //   typeof kyselyDb & {
-      //     t: { 
-      //       comment_num: any; 
-      //       comment_id: any; 
-      //       level: any;
-      //       parent_id: any; 
-      //       user_id: any; 
-      //       username: any; 
-      //       created_at: any; 
-      //       content: any; 
-      //       is_deleted: any; 
-      //       max_children_comment_num: any; 
-      //     }
-      //   }
-      // >
-
-
-      interface Comments2 {
-        comment_id: string;
-        username: string | null;
-        user_id: string | null;
-        body: string | null;
-        created_at: string;
-        level: number;
-        is_deleted: boolean;
-        comment_num: number;
-        maximum_child_comment_num: number | null;
-      }
-      
       function reusable<TB extends keyof KyselyDatabase, O>(qb:SelectQueryBuilder<KyselyDatabase, TB, O>) {
         return qb
           .innerJoin("profiles as users", "users.user_id", "c.user_id")
@@ -320,8 +153,8 @@ export const routes = router({
       const response = await kyselyDb
         .withRecursive(
           "t(user_id, username, comment_id, content, level, parent_id, comment_num, created_at, is_deleted, max_children_comment_num)",
-          (db) =>
-            db.with('c', ()=>comments_view)
+          (db) => db
+            .with('c', ()=>comments_view)
             .selectFrom("c")
               .$call(reusable)
               .where("parent_id", "is", null)
@@ -333,95 +166,14 @@ export const routes = router({
         )
         .selectFrom("t")
         .selectAll()
-        .execute();
+        .execute()
 
-      // if (!response[0].json_build_object.post) {
-      //   throw new TRPCError({
-      //     code: "NOT_FOUND",
-      //     message: "Post not found",
-      //   });
-      // }
-
-      // const formattedResponse = {
-      //   post: response[0].json_build_object.post,
-      //   comments: response[0].json_build_object.comments.comments,
-      // };
-      // const innerResponse = response[0];
-      // const formattedResponse = {
-      //   post: {
-      //     ...innerResponse.posts,
-      //     users: {
-      //       user_id: innerResponse.users.user_id,
-      //       username: innerResponse.users.username,
-      //     },
-      //   },
-      //   comments: innerResponse.comments.comments,
-      // };
-      // return formattedResponse;
-      return response;
-      // }catch(err){
-      //   console.log("err", err);
-      //   return err;
-      // }
-
-      // const response = db
-      //   .select({
-      //     comments: rawDrizzleSqlQuery`
-      //     coalesce(json_agg(
-      //       comment_tree(comment_id)
-      //       order by comments.created_at asc
-      //     ), '[]') as comments`,
-      //   })
-      //   .from(comment)
-      //   .where(isNull(comment.parent_id))
-      //   .where(eq(comment.post_id, postId));
+      return response
     }),
   createComment: publicProcedure
     .input(createCommentInput)
     .mutation(async (req) => {
-      // const input = req.input;
       const { parent_id, level, user_id, post_id, content } = req.input;
-      // const response = await db
-      //   .insert(comments)
-      //   .values({ ...input })
-      //   .returning()
-      // .select()
-      // .from(users);
-
-      //OUTPUT Inserted.comment_id, Inserted.user_id, Inserted.post_id, Inserted.level, Inserted.content, Inserted.parent_id, Inserted.likes, Inserted.dislikes, Inserted.created_at
-      // const response = await db.execute(
-      //   rawDrizzleSqlQuery`
-      //     INSERT INTO comments ( level, parent_id, user_id, post_id, content)
-      //     OUTPUT Inserted.comment_id, Inserted.user_id, Inserted.post_id, Inserted.level, Inserted.content, Inserted.parent_id, Inserted.likes, Inserted.dislikes, Inserted.created_at
-      //     VALUES(${input.level}, ${input.parent_id}, ${input.user_id}, ${input.post_id}, ${input.content});
-      //   `
-      // );
-
-      // SELECT * FROM comment_row c
-      //   LEFT JOIN
-      //   profiles p ON p.user_id = c.user_id
-      // const response = await db.execute(
-      //   rawDrizzleSqlQuery`
-      //   with comment_row as (
-      //     INSERT INTO comments ( level, parent_id, user_id, post_id, content)
-      //     VALUES(${input.level}, ${input.parent_id}, ${input.user_id}, ${input.post_id}, ${input.content})
-      //     RETURNING *
-      //   )
-      //   SELECT json_build_object(
-      //     'comment_id', c.comment_id,
-      //     'user', json_build_object(
-      //       'username', u.username,
-      //       'user_id', u.user_id
-      //     ),
-      //     'body', c.content,
-      //     'created_at', c.created_at,
-      //     'level', c.level,
-      //     'comments', array[]::varchar[]
-      //   ) from comment_row c
-      //       left join profiles u using(user_id)
-      //   `
-      // );
-
       const response = await kyselyDb
         .with('comment_row', (withQuery) => withQuery
           .insertInto("comments")
@@ -452,19 +204,11 @@ export const routes = router({
           comments: [],
         },
       ];
-      // const formattedComment = [response[0].json_build_object];
+
       return formattedComment;
-      // return response;
     }),
   deleteComment: publicProcedure.input(deleteComment).mutation(async (req) => {
     const input = req.input;
-    // const response = await db.delete(comments).where(eq(comments.comment_id, input.comment_id)).returning({ deleted_id: comments.comment_id });
-    // const response = await db
-    //   .update(comments)
-    //   .set({ is_deleted: true })
-    //   .where(eq(comments.comment_id, input.comment_id))
-    //   .returning({ deleted_id: comments.comment_id });
-    
     const response = await kyselyDb
       .updateTable(commentsTableName)
       .set({ is_deleted: true })
@@ -477,11 +221,7 @@ export const routes = router({
     .input(deleteComment)
     .mutation(async (req) => {
       const input = req.input;
-      // const response = await db
-      //   .delete(comments)
-      //   .where(eq(comments.comment_id, input.comment_id))
-      //   .returning({ comment_id: comments.comment_id });
-      // return response;
+
       const response = await kyselyDb
         .deleteFrom("comments")
         .where('comments.comment_id', '=', input.comment_id)
