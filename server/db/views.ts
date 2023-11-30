@@ -6,11 +6,12 @@ export const comments_view = kyselyDb
     "comment_id",
     "level",
     "parent_id",
+    // "user_id",
     eb
       .case()
       .when("is_deleted", "=", true)
-      .then("null")
-      .else("user_id")
+      .then(null)
+      .else(eb.ref("user_id"))
       .end()
       .as("user_id"),
     "post_id",
@@ -18,8 +19,8 @@ export const comments_view = kyselyDb
     eb
       .case()
       .when("is_deleted", "=", true)
-      .then("null")
-      .else("content")
+      .then(null)
+      .else(eb.ref("content"))
       .end()
       .as("content"),
     "likes",
@@ -27,7 +28,3 @@ export const comments_view = kyselyDb
     "is_deleted",
     "comment_num",
   ]);
-
-export const commentsViewGetter = async () => {
-    return await comments_view.selectAll().execute();
-}

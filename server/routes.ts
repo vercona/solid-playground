@@ -7,6 +7,7 @@ import { ZodError, z } from "zod";
 import { db } from "./db";
 import { comments, commentsTableName, createCommentInput, createPostInput, createUserInput, deleteComment, getAllCommentsInput, getPost, getPostInput, posts, postsTableName, users, usersTableName } from "./db/schemas";
 import { kyselyDb } from "./db/kyselyDb";
+import { comments_view } from "./db/views";
 
 export const t = initTRPC.create({
   errorFormatter({ shape, error }) {
@@ -231,34 +232,34 @@ export const routes = router({
       //   // .selectAll()
       //   .execute();
 
-      const getAllCommentsQuery = rawDrizzleSqlQuery`
-        WITH RECURSIVE t(user_id, username, content, comment_id, level, comment_num) AS (
-          SELECT user_id, username, content, comment_id, level, comment_num
-          FROM comments
-          INNER JOIN profiles USING (user_id)
-          WHERE parent_id IS NULL
-          UNION ALL
-            SELECT users.user_id, users.username, c.content, c.comment_id, c.level, c.comment_num
-            FROM t
-            INNER JOIN comments AS c
-              ON (t.comment_id = c.parent_id) AND (c.comment_num < 5)
-            INNER JOIN profiles AS users
-              ON (users.user_id = c.user_id)
-        )
-        SELECT *
-        FROM t;
-      `;
+      // const getAllCommentsQuery = rawDrizzleSqlQuery`
+      //   WITH RECURSIVE t(user_id, username, content, comment_id, level, comment_num) AS (
+      //     SELECT user_id, username, content, comment_id, level, comment_num
+      //     FROM comments
+      //     INNER JOIN profiles USING (user_id)
+      //     WHERE parent_id IS NULL
+      //     UNION ALL
+      //       SELECT users.user_id, users.username, c.content, c.comment_id, c.level, c.comment_num
+      //       FROM t
+      //       INNER JOIN comments AS c
+      //         ON (t.comment_id = c.parent_id) AND (c.comment_num < 5)
+      //       INNER JOIN profiles AS users
+      //         ON (users.user_id = c.user_id)
+      //   )
+      //   SELECT *
+      //   FROM t;
+      // `;
 
       const response = await kyselyDb
         .withRecursive(
-          "t(user_id, username, comment_id, level, parent_id, comment_num, created_at, is_deleted, max_children_comment_num)",
+          "t(user_id, username, comment_id, content, level, parent_id, comment_num, created_at, is_deleted, max_children_comment_num)",
           (db) =>
             db
-              .selectFrom("comments")
+              .selectFrom((view) => comments_view.as("comments_view"))
               .innerJoin(
                 "profiles as users",
                 "users.user_id",
-                "comments.user_id"
+                "comments_view.user_id"
               )
               .leftJoinLateral(
                 (db) =>
@@ -270,7 +271,7 @@ export const routes = router({
                     .whereRef(
                       "child_comments.parent_id",
                       "=",
-                      "comments.comment_id"
+                      "comments_view.comment_id"
                     )
                     .as("get_children"),
                 (join) => join.onTrue()
@@ -279,10 +280,11 @@ export const routes = router({
                 "users.user_id",
                 "username",
                 "comment_id",
+                "content",
                 "level",
                 "parent_id",
                 "comment_num",
-                "comments.created_at",
+                "comments_view.created_at",
                 "is_deleted",
                 "max_children_comment_num",
               ])
@@ -292,11 +294,11 @@ export const routes = router({
                 db
                   .selectFrom("t")
                   .innerJoin(
-                    "comments as c",
-                    (join) =>
-                      join
-                        .onRef("t.comment_id", "=", "c.parent_id")
-                        .on("c.comment_num", "<", 10)
+                    // comments_view.as("c"),
+                    comments_view.as("c"),
+                    "c.parent_id",
+                    "t.comment_id"
+                    // .on("c.comment_num", "<", 10)
                     // .on("c.level", "<", 2)
                   )
                   .innerJoin("profiles as users", "users.user_id", "c.user_id")
@@ -309,7 +311,6 @@ export const routes = router({
                             .max("comment_num")
                             .as("max_children_comment_num")
                         )
-                        // .whereRef("parent_id", "=", "t.comment_id")
                         .whereRef(
                           "child_comments.parent_id",
                           "=",
@@ -322,6 +323,7 @@ export const routes = router({
                     "users.user_id",
                     "users.username",
                     "c.comment_id",
+                    "c.content",
                     "c.level",
                     "c.parent_id",
                     "c.comment_num",
