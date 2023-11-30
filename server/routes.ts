@@ -120,7 +120,7 @@ export const routes = router({
 
       function reusable<TB extends keyof KyselyDatabase, O>(qb:SelectQueryBuilder<KyselyDatabase, TB, O>) {
         return qb
-          .innerJoin("profiles as users", "users.user_id", "c.user_id")
+          .innerJoin("profiles", "profiles.user_id", "c.user_id")
           .leftJoinLateral(
             (db) =>
               // it may be better to increment a value on parent for each child insert
@@ -135,8 +135,8 @@ export const routes = router({
             (join) => join.onTrue()
           )
           .select([
-            "users.user_id",
-            "users.username",
+            "profiles.user_id",
+            "profiles.username",
             
             "c.comment_id",
             "c.content",
