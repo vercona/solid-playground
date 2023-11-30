@@ -1,32 +1,23 @@
-type nested<T> = T & {children: nested<T>[] };
+type Nested<T> = T & {children: Nested<T>[] };
 
-export function nest<O>(
-  arr:O[],
+export function nest<O> (
+  arr: O[],
   idKey: keyof O,
   parentKey: keyof O,
   parent: null|string = null
-) {
-  let filterComments = arr.filter(el => el[parentKey] === parent)
-
-  let out = [] as nested<O>[]
-  for(let baseComment of filterComments) {
-    let asParent = baseComment[idKey] as string
-    let comment:any = {
+): Nested<O>[] {
+  return arr
+    .filter(el => el[parentKey] === parent)
+    .map( (baseComment: O) => ({
       ...baseComment,
       children: nest(
         arr,
         idKey,
         parentKey,
-        asParent
+        baseComment[idKey] as string
       )
-    }
-    out.push(comment)
-  }
-
-  //console.log(JSON.stringify(output, null, 2))
-  return out
+    }))
 }
-
 
 interface MinimalComment {
   level: number;
