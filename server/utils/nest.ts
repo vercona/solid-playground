@@ -30,3 +30,19 @@ export function nest<O>(
   //console.log(JSON.stringify(output, null, 2))
   return output
 }
+
+
+
+interface MinimalComment {
+  level: number;
+  comment_id: string;
+  parent_id: string | null
+}
+export function nestComments<O extends MinimalComment>(comment_arr: O[]) {
+  return nest<O>(
+    comment_arr,
+    (a, b) => a.level-b.level,
+    'comment_id', 
+    'parent_id'
+  )
+}

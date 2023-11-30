@@ -3,13 +3,13 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { sql } from "kysely";
 import { eq, isNull, sql as rawDrizzleSqlQuery } from "drizzle-orm";
 import { TRPCError, initTRPC } from "@trpc/server";
-import { ZodError, z } from "zod";
+import { TypeOf, ZodError, z } from "zod";
 import { db } from "./db";
 import { comments, commentsTableName, createCommentInput, createPostInput, createUserInput, deleteComment, getAllCommentsInput, getPost, getPostInput, posts, postsTableName, users, usersTableName } from "./db/schemas";
 import { kyselyDb } from "./db/kyselyDb";
 import { comments_view } from "./db/views";
 
-import {nest} from './utils/nest'
+import { nestComments } from './utils/nest'
 
 export const t = initTRPC.create({
   errorFormatter({ shape, error }) {
@@ -363,13 +363,7 @@ export const routes = router({
       // };
       // return formattedResponse;
 
-      let tmp = nest(
-        response,
-        (a, b) => a.level-b.level,
-        'comment_id', 'parent_id',
-      );
-
-      return tmp
+      return nestComments(response)
       // }catch(err){
       //   console.log("err", err);
       //   return err;
