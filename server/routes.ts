@@ -1,12 +1,14 @@
+//@ts-nocheck
 // import { FastifyInstance } from "fastify";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
-import { sql } from "kysely";
+import { sql, SelectQueryBuilder, QueryCreator, AliasedSelectQueryBuilder } from "kysely";
+import { ExpressionBuilder, TableExpression } from 'kysely'
 import { eq, isNull, sql as rawDrizzleSqlQuery } from "drizzle-orm";
 import { TRPCError, initTRPC } from "@trpc/server";
 import { ZodError, z } from "zod";
 import { db } from "./db";
 import { comments, commentsTableName, createCommentInput, createPostInput, createUserInput, deleteComment, getAllCommentsInput, getPost, getPostInput, posts, postsTableName, users, usersTableName } from "./db/schemas";
-import { kyselyDb } from "./db/kyselyDb";
+import { kyselyDb, KyselyDatabase } from "./db/kyselyDb";
 import { comments_view } from "./db/views";
 
 export const t = initTRPC.create({
@@ -251,72 +253,79 @@ export const routes = router({
       // `;
 
 
+      let returnCols;
+
+      // type Test = QueryCreator<
+      //   typeof kyselyDb & {
+      //     t: { 
+      //       comment_num: any; 
+      //       comment_id: any; 
+      //       level: any;
+      //       parent_id: any; 
+      //       user_id: any; 
+      //       username: any; 
+      //       created_at: any; 
+      //       content: any; 
+      //       is_deleted: any; 
+      //       max_children_comment_num: any; 
+      //     }
+      //   }
+      // >
+
+
+      interface Comments2 {
+        comment_id: string;
+        username: string | null;
+        user_id: string | null;
+        body: string | null;
+        created_at: string;
+        level: number;
+        is_deleted: boolean;
+        comment_num: number;
+        maximum_child_comment_num: number | null;
+      }
       
+      function reusable<TB extends keyof KyselyDatabase, O>(qb:SelectQueryBuilder<KyselyDatabase, TB, O>) {
+        return qb
+          .innerJoin("profiles as users", "users.user_id", "c.user_id")
+          .leftJoinLateral(
+            (db) =>
+              db.selectFrom("comments as child_comments")
+                .select((eb) =>
+                  eb.fn.max("comment_num").as("max_children_comment_num")
+                )
+                .whereRef("child_comments.parent_id", "=", "c.comment_id")
+                .as("get_children"),
+            (join) => join.onTrue()
+          )
+          .select([
+            "users.user_id",
+            "users.username",
+            
+            "c.comment_id",
+            "c.content",
+            "c.level",
+            "c.parent_id",
+            "c.comment_num",
+            "c.created_at",
+            "c.is_deleted",
+
+            "get_children.max_children_comment_num",
+          ])
+      }
 
       const response = await kyselyDb
         .withRecursive(
           "t(user_id, username, comment_id, content, level, parent_id, comment_num, created_at, is_deleted, max_children_comment_num)",
           (db) =>
-            db.selectFrom((view) => comments_view.as("c"))
-              .innerJoin("profiles as users", "users.user_id", "c.user_id")
-              .leftJoinLateral(
-                (db) =>
-                  db.selectFrom("comments as child_comments")
-                    .select((eb) =>
-                      eb.fn.max("comment_num").as("max_children_comment_num")
-                    )
-                    .whereRef("child_comments.parent_id", "=", "c.comment_id")
-                    .as("get_children"),
-                (join) => join.onTrue()
-              )
-              .select([
-                "users.user_id",
-                "users.username",
-                "c.comment_id",
-                "c.content",
-                "c.level",
-                "c.parent_id",
-                "c.comment_num",
-                "c.created_at",
-                "c.is_deleted",
-                "get_children.max_children_comment_num",
-              ])
+            db.selectFrom(comments_view.as("c"))
+              .$call(reusable)
               .where("parent_id", "is", null)
-              // .where("comment_num", "<", 2)
-              .unionAll((db) =>
-                db.selectFrom("t")
-                  .innerJoin(
-                    // comments_view.as("c"),
-                    comments_view.as("c"),
-                    "c.parent_id",
-                    "t.comment_id"
-                    // .on("c.comment_num", "<", 10)
-                    // .on("c.level", "<", 2)
-                  )
-                  .innerJoin("profiles as users", "users.user_id", "c.user_id")
-                  .leftJoinLateral(
-                    (db) =>
-                      db.selectFrom("comments as child_comments")
-                        .select((eb) =>
-                          eb.fn.max("comment_num").as("max_children_comment_num")
-                        )
-                        .whereRef("child_comments.parent_id", "=", "c.comment_id")
-                        .as("get_children"),
-                    (join) => join.onTrue()
-                  )
-                  .select([
-                    "users.user_id",
-                    "users.username",
-                    "c.comment_id",
-                    "c.content",
-                    "c.level",
-                    "c.parent_id",
-                    "c.comment_num",
-                    "c.created_at",
-                    "c.is_deleted",
-                    "get_children.max_children_comment_num",
-                  ])
-              )
+            .unionAll( db =>
+              db.selectFrom("t")
+                .innerJoin(comments_view.as("c"), "c.parent_id", "t.comment_id")
+                .$call(reusable)
+            )
         )
         .selectFrom("t")
         .selectAll()
