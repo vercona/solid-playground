@@ -318,12 +318,13 @@ export const routes = router({
         .withRecursive(
           "t(user_id, username, comment_id, content, level, parent_id, comment_num, created_at, is_deleted, max_children_comment_num)",
           (db) =>
-            db.selectFrom(comments_view.as("c"))
+            db.with('c', ()=>comments_view)
+            .selectFrom("c")
               .$call(reusable)
               .where("parent_id", "is", null)
             .unionAll( db =>
               db.selectFrom("t")
-                .innerJoin(comments_view.as("c"), "c.parent_id", "t.comment_id")
+                .innerJoin("c", "c.parent_id", "t.comment_id")
                 .$call(reusable)
             )
         )
