@@ -9,6 +9,8 @@ import { comments, commentsTableName, createCommentInput, createPostInput, creat
 import { kyselyDb } from "./db/kyselyDb";
 import { comments_view } from "./db/views";
 
+import {nest} from './utils/nest'
+
 export const t = initTRPC.create({
   errorFormatter({ shape, error }) {
     return {
@@ -360,7 +362,14 @@ export const routes = router({
       //   comments: innerResponse.comments.comments,
       // };
       // return formattedResponse;
-      return response;
+
+      let tmp = nest(
+        response,
+        (a, b) => a.level-b.level,
+        'comment_id', 'parent_id',
+      );
+
+      return tmp
       // }catch(err){
       //   console.log("err", err);
       //   return err;
