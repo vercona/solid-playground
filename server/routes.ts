@@ -155,228 +155,71 @@ export const routes = router({
     .query(async (req) => {
       const { post_id } = req.input;
 
-      // const getAllCommentsQuery = rawDrizzleSqlQuery`
-      //   select
-      //     TO_JSON(parentComment) as comments,
-      //     TO_JSON(p) as posts,
-      //     TO_JSON(u) as users
-      //   from (
-      //     select
-      //       coalesce(json_agg(
-      //         comment_tree(comment_id, 0, 4)
-      //         order by c.created_at asc
-      //       ), '[]') as comments
-      //     from comments_view c
-      //     WHERE c.parent_id is null AND
-      //     c.post_id = ${post_id}
-      //   ) as parentComment
-      //   LEFT JOIN posts p ON p.post_id = ${post_id}
-      //   LEFT JOIN profiles u ON u.user_id = p.user_id
-      // `;
-
- 
-
-      // try{
-
-      // const response: any = await db.execute(getAllCommentsQuery);
-
-      // const parentCommentsSelect: any = sql`TO_JSON(parent_comment) as comments`;
-      // const postsSelect: any = sql`TO_JSON(posts) as posts`;
-      // const usersSelect: any = sql`TO_JSON(profiles) as users`;
-
-      // const response = await kyselyDb
-      //   .selectFrom([
-      //     kyselyDb
-      //       .selectFrom("comments")
-      //       .select(({ fn, val, ref }) => [
-      //         sql`comment_tree(comments.comment_id, 0, 4)`.as(
-      //           "recursiveComments"
-      //         ),
-      //       ])
-      //       .orderBy("created_at", "asc")
-      //       .where("comments.parent_id", "is", null)
-      //       .as("parent_comment"),
-      //   ])
-      //   .leftJoin("posts", (join) => join.on("posts.post_id", "=", post_id))
-      //   .leftJoin("profiles as users", (join) =>
-      //     join.onRef("users.user_id", "=", "posts.user_id")
-      //   )
-      //   // .selectAll()
-      //   // .select([parentCommentsSelect, postsSelect, usersSelect])
-      //   .select(["parent_comment.recursiveComments", "posts.title", "posts.description", "posts.created_at", "users.user_id", "users.username"])
-      //   .execute();
-      // .compile();
-
-      // const parentCommentsSelect: any = sql`TO_JSON(parent_comment) as comments`;
-      // const postsSelect: any = sql`TO_JSON(posts) as posts`;
-      // const usersSelect: any = sql`TO_JSON(profiles) as users`;
-
-      // const response = await kyselyDb
-      //   .selectFrom([
-      //     kyselyDb
-      //       .selectFrom("comments")
-      //       .select(({ fn, val, ref }) => [
-      //         sql`coalesce(json_agg(
-      //         comment_tree(comment_id, 0, 4)
-      //         order by comments.created_at asc
-      //       ), '[]')`.as("comments"),
-      //       ])
-      //       .where("comments.parent_id", "is", null)
-      //       .as("parent_comment"),
-      //   ])
-      //   .leftJoin("posts", (join) => join.on("posts.post_id", "=", post_id))
-      //   .leftJoin("profiles", (join) =>
-      //     join.onRef("profiles.user_id", "=", "posts.user_id")
-      //   )
-      //   .select([parentCommentsSelect, postsSelect, usersSelect])
-      //   // .selectAll()
-      //   .execute();
-
-      // const getAllCommentsQuery = rawDrizzleSqlQuery`
-      //   WITH RECURSIVE t(user_id, username, content, comment_id, level, comment_num) AS (
-      //     SELECT user_id, username, content, comment_id, level, comment_num
-      //     FROM comments
-      //     INNER JOIN profiles USING (user_id)
-      //     WHERE parent_id IS NULL
-      //     UNION ALL
-      //       SELECT users.user_id, users.username, c.content, c.comment_id, c.level, c.comment_num
-      //       FROM t
-      //       INNER JOIN comments AS c
-      //         ON (t.comment_id = c.parent_id) AND (c.comment_num < 5)
-      //       INNER JOIN profiles AS users
-      //         ON (users.user_id = c.user_id)
-      //   )
-      //   SELECT *
-      //   FROM t;
-      // `;
-
       const response = await kyselyDb
         .withRecursive(
           "t(user_id, username, comment_id, content, level, parent_id, comment_num, created_at, is_deleted, max_children_comment_num)",
-          (db) =>
-            db
-              .selectFrom((view) => comments_view.as("comments_view"))
-              .innerJoin(
-                "profiles as users",
-                "users.user_id",
-                "comments_view.user_id"
+          db => ( db
+            .with('c', comments_view)
+              .selectFrom("c")
+              .innerJoin("profiles", "profiles.user_id", "c.user_id")
+              .leftJoinLateral( db =>
+                // it may be better to increment a value on parent for each child insert
+                // when you think about what this is doing behind the scenes, its a bit overkill
+                // a counter val may be easier to subscribe to later as well
+                db.selectFrom("c as child_comments")
+                  .select( eb => eb.fn.max("comment_num").as("max_children_comment_num") )
+                  .whereRef("child_comments.parent_id", "=", "c.comment_id")
+                  .as("get_children"),
+                join => join.onTrue()
               )
-              .leftJoinLateral(
-                (db) =>
-                  db
-                    .selectFrom("comments as child_comments")
-                    .select((eb) =>
-                      eb.fn.max("comment_num").as("max_children_comment_num")
-                    )
-                    .whereRef(
-                      "child_comments.parent_id",
-                      "=",
-                      "comments_view.comment_id"
-                    )
-                    .as("get_children"),
-                (join) => join.onTrue()
-              )
-              .select((eb) => [
-                "users.user_id",
-                "username",
-                "comment_id",
-                "content",
-                "level",
-                "parent_id",
-                "comment_num",
-                "comments_view.created_at",
-                "is_deleted",
-                "max_children_comment_num",
+              .select([
+                "profiles.user_id",
+                "profiles.username",
+                
+                "c.comment_id",
+                "c.content",
+                "c.level",
+                "c.parent_id",
+                "c.comment_num",
+                "c.created_at",
+                "c.is_deleted",
+    
+                "get_children.max_children_comment_num",
               ])
               .where("parent_id", "is", null)
-              // .where("comment_num", "<", 2)
-              .unionAll((db) =>
-                db
-                  .selectFrom("t")
-                  .innerJoin(
-                    // comments_view.as("c"),
-                    comments_view.as("c"),
-                    "c.parent_id",
-                    "t.comment_id"
-                    // .on("c.comment_num", "<", 10)
-                    // .on("c.level", "<", 2)
-                  )
-                  .innerJoin("profiles as users", "users.user_id", "c.user_id")
-                  .leftJoinLateral(
-                    (db) =>
-                      db
-                        .selectFrom("comments as child_comments")
-                        .select((eb) =>
-                          eb.fn
-                            .max("comment_num")
-                            .as("max_children_comment_num")
-                        )
-                        .whereRef(
-                          "child_comments.parent_id",
-                          "=",
-                          "c.comment_id"
-                        )
-                        .as("get_children"),
-                    (join) => join.onTrue()
-                  )
-                  .select([
-                    "users.user_id",
-                    "users.username",
-                    "c.comment_id",
-                    "c.content",
-                    "c.level",
-                    "c.parent_id",
-                    "c.comment_num",
-                    "c.created_at",
-                    "c.is_deleted",
-                    "get_children.max_children_comment_num",
-                  ])
+            .unionAll( db => db
+              .selectFrom("t")
+              .innerJoin("c", "c.parent_id", "t.comment_id")
+              .innerJoin("profiles", "profiles.user_id", "c.user_id")
+              .leftJoinLateral( db =>
+                  db.selectFrom("c as child_comments")
+                    .select((eb) => eb.fn.max("comment_num").as("max_children_comment_num"))
+                    .whereRef("child_comments.parent_id", "=", "c.comment_id")
+                    .as("get_children"),
+                join => join.onTrue()
               )
+              .select([
+                "profiles.user_id",
+                "profiles.username",
+                
+                "c.comment_id",
+                "c.content",
+                "c.level",
+                "c.parent_id",
+                "c.comment_num",
+                "c.created_at",
+                "c.is_deleted",
+
+                "get_children.max_children_comment_num",
+              ])
+            )
+          )
         )
         .selectFrom("t")
         .selectAll()
-        .execute();
+        .execute()
 
-      // if (!response[0].json_build_object.post) {
-      //   throw new TRPCError({
-      //     code: "NOT_FOUND",
-      //     message: "Post not found",
-      //   });
-      // }
-
-      // const formattedResponse = {
-      //   post: response[0].json_build_object.post,
-      //   comments: response[0].json_build_object.comments.comments,
-      // };
-      // const innerResponse = response[0];
-      // const formattedResponse = {
-      //   post: {
-      //     ...innerResponse.posts,
-      //     users: {
-      //       user_id: innerResponse.users.user_id,
-      //       username: innerResponse.users.username,
-      //     },
-      //   },
-      //   comments: innerResponse.comments.comments,
-      // };
-      // return formattedResponse;
-      return response;
-      // }catch(err){
-      //   console.log("err", err);
-      //   return err;
-      // }
-
-      // const response = db
-      //   .select({
-      //     comments: rawDrizzleSqlQuery`
-      //     coalesce(json_agg(
-      //       comment_tree(comment_id)
-      //       order by comments.created_at asc
-      //     ), '[]') as comments`,
-      //   })
-      //   .from(comment)
-      //   .where(isNull(comment.parent_id))
-      //   .where(eq(comment.post_id, postId));
+      return response
     }),
   createComment: publicProcedure
     .input(createCommentInput)

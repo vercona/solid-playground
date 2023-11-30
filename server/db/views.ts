@@ -1,6 +1,6 @@
 import { kyselyDb } from "./kyselyDb";
 
-export const comments_view = kyselyDb
+export const comments_view = ()=>kyselyDb
   .selectFrom("comments")
   .select((eb) => [
     "comment_id",
