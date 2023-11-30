@@ -39,10 +39,10 @@ interface Comments {
 const CommentsSchema: z.ZodType<Comments> = z.lazy(() =>
   z.object({
     comment_id: z.string(),
-    user: z.object({
+    //user: z.object({
       username: z.string().nullable(),
-      user_id: z.string().nullable()
-    }),
+      user_id: z.string().nullable(),
+    //}),
     body: z.string().nullable(),
     created_at: z.string(),
     level: z.number(),
@@ -54,14 +54,14 @@ const CommentsSchema: z.ZodType<Comments> = z.lazy(() =>
     if(comment.is_deleted){
       return (
         comment.body === null &&
-        comment.user.user_id === null &&
-        comment.user.username === null
+        comment.user_id === null &&
+        comment.username === null
       );
     }else {
       return (
         typeof comment.body === "string" &&
-        typeof comment.user.user_id === "string" &&
-        typeof comment.user.username === "string"
+        typeof comment.user_id === "string" &&
+        typeof comment.username === "string"
       );
     }
   })
