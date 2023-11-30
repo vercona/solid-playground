@@ -290,7 +290,7 @@ export const routes = router({
           .innerJoin("profiles as users", "users.user_id", "c.user_id")
           .leftJoinLateral(
             (db) =>
-              db.selectFrom("comments as child_comments")
+              db.selectFrom("c as child_comments")
                 .select((eb) =>
                   eb.fn.max("comment_num").as("max_children_comment_num")
                 )
