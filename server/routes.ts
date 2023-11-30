@@ -250,49 +250,41 @@ export const routes = router({
       //   FROM t;
       // `;
 
+
+      
+
       const response = await kyselyDb
         .withRecursive(
           "t(user_id, username, comment_id, content, level, parent_id, comment_num, created_at, is_deleted, max_children_comment_num)",
           (db) =>
-            db
-              .selectFrom((view) => comments_view.as("comments_view"))
-              .innerJoin(
-                "profiles as users",
-                "users.user_id",
-                "comments_view.user_id"
-              )
+            db.selectFrom((view) => comments_view.as("c"))
+              .innerJoin("profiles as users", "users.user_id", "c.user_id")
               .leftJoinLateral(
                 (db) =>
-                  db
-                    .selectFrom("comments as child_comments")
+                  db.selectFrom("comments as child_comments")
                     .select((eb) =>
                       eb.fn.max("comment_num").as("max_children_comment_num")
                     )
-                    .whereRef(
-                      "child_comments.parent_id",
-                      "=",
-                      "comments_view.comment_id"
-                    )
+                    .whereRef("child_comments.parent_id", "=", "c.comment_id")
                     .as("get_children"),
                 (join) => join.onTrue()
               )
-              .select((eb) => [
+              .select([
                 "users.user_id",
-                "username",
-                "comment_id",
-                "content",
-                "level",
-                "parent_id",
-                "comment_num",
-                "comments_view.created_at",
-                "is_deleted",
-                "max_children_comment_num",
+                "users.username",
+                "c.comment_id",
+                "c.content",
+                "c.level",
+                "c.parent_id",
+                "c.comment_num",
+                "c.created_at",
+                "c.is_deleted",
+                "get_children.max_children_comment_num",
               ])
               .where("parent_id", "is", null)
               // .where("comment_num", "<", 2)
               .unionAll((db) =>
-                db
-                  .selectFrom("t")
+                db.selectFrom("t")
                   .innerJoin(
                     // comments_view.as("c"),
                     comments_view.as("c"),
@@ -304,18 +296,11 @@ export const routes = router({
                   .innerJoin("profiles as users", "users.user_id", "c.user_id")
                   .leftJoinLateral(
                     (db) =>
-                      db
-                        .selectFrom("comments as child_comments")
+                      db.selectFrom("comments as child_comments")
                         .select((eb) =>
-                          eb.fn
-                            .max("comment_num")
-                            .as("max_children_comment_num")
+                          eb.fn.max("comment_num").as("max_children_comment_num")
                         )
-                        .whereRef(
-                          "child_comments.parent_id",
-                          "=",
-                          "c.comment_id"
-                        )
+                        .whereRef("child_comments.parent_id", "=", "c.comment_id")
                         .as("get_children"),
                     (join) => join.onTrue()
                   )
