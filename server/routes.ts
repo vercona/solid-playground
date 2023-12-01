@@ -196,7 +196,7 @@ export const routes = router({
       const response = await kyselyDb
         .withRecursive(
           "t(user_id, username, comment_id, content, level, parent_id, comment_num, created_at, is_deleted, max_children_comment_num)",
-         db => ( (db as  QueryCreator<Test>)
+          (db: QueryCreator<Test>) => ( db
             .with('c', comments_view)
               .selectFrom("c")
               .$call(reusable)
