@@ -1,12 +1,12 @@
 // import { FastifyInstance } from "fastify";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
-import { sql } from "kysely";
+import { SelectQueryBuilder } from "kysely";
 import { eq, isNull, sql as rawDrizzleSqlQuery } from "drizzle-orm";
 import { TRPCError, initTRPC } from "@trpc/server";
 import { ZodError, z } from "zod";
 import { db } from "./db";
 import { comments, commentsTableName, createCommentInput, createPostInput, createUserInput, deleteComment, getAllCommentsInput, getPost, getPostInput, posts, postsTableName, users, usersTableName } from "./db/schemas";
-import { kyselyDb } from "./db/kyselyDb";
+import { kyselyDb, KDB } from "./db/kyselyDb";
 import { comments_view } from "./db/views";
 
 export const t = initTRPC.create({
@@ -155,63 +155,55 @@ export const routes = router({
     .query(async (req) => {
       const { post_id } = req.input;
 
+      interface Test extends KDB {
+        t:  KDB['comments'] & {
+          user_id: string | null
+          username: string
+          max_children_comment_num: number | null
+        }
+      }
+
+      const reusable = (qb: SelectQueryBuilder<Test, "c", {}>) =>
+        qb
+          .innerJoin("profiles", "profiles.user_id", "c.user_id")
+          .leftJoinLateral(
+            (eb) =>
+              eb
+                .selectFrom("c as child_comments")
+                .select((eb) =>
+                  eb.fn.max("comment_num").as("max_children_comment_num"),
+                )
+                .whereRef("child_comments.parent_id", "=", "c.comment_id")
+                .as("get_children"),
+            (jb) => jb.onTrue(),
+          )
+          .select([
+            "profiles.user_id",
+            "profiles.username",
+
+            "c.comment_id",
+            "c.content",
+            "c.level",
+            "c.parent_id",
+            "c.comment_num",
+            "c.created_at",
+            "c.is_deleted",
+
+            "get_children.max_children_comment_num",
+          ])
+
       const response = await kyselyDb
         .withRecursive(
           "t(user_id, username, comment_id, content, level, parent_id, comment_num, created_at, is_deleted, max_children_comment_num)",
           db => ( db
             .with('c', comments_view)
               .selectFrom("c")
-              .innerJoin("profiles", "profiles.user_id", "c.user_id")
-              .leftJoinLateral( db =>
-                // it may be better to increment a value on parent for each child insert
-                // when you think about what this is doing behind the scenes, its a bit overkill
-                // a counter val may be easier to subscribe to later as well
-                db.selectFrom("c as child_comments")
-                  .select( eb => eb.fn.max("comment_num").as("max_children_comment_num") )
-                  .whereRef("child_comments.parent_id", "=", "c.comment_id")
-                  .as("get_children"),
-                join => join.onTrue()
-              )
-              .select([
-                "profiles.user_id",
-                "profiles.username",
-                
-                "c.comment_id",
-                "c.content",
-                "c.level",
-                "c.parent_id",
-                "c.comment_num",
-                "c.created_at",
-                "c.is_deleted",
-    
-                "get_children.max_children_comment_num",
-              ])
+              .$call(reusable)
               .where("parent_id", "is", null)
             .unionAll( db => db
               .selectFrom("t")
               .innerJoin("c", "c.parent_id", "t.comment_id")
-              .innerJoin("profiles", "profiles.user_id", "c.user_id")
-              .leftJoinLateral( db =>
-                  db.selectFrom("c as child_comments")
-                    .select((eb) => eb.fn.max("comment_num").as("max_children_comment_num"))
-                    .whereRef("child_comments.parent_id", "=", "c.comment_id")
-                    .as("get_children"),
-                join => join.onTrue()
-              )
-              .select([
-                "profiles.user_id",
-                "profiles.username",
-                
-                "c.comment_id",
-                "c.content",
-                "c.level",
-                "c.parent_id",
-                "c.comment_num",
-                "c.created_at",
-                "c.is_deleted",
-
-                "get_children.max_children_comment_num",
-              ])
+              .$call(reusable)
             )
           )
         )

@@ -11,13 +11,14 @@ if (!process.env.DATABASE_URL) {
 
 const connectionString = process.env.DATABASE_URL;
 
-interface KyselyDatabase {
+export interface KDB {
     profiles: Kyselify<typeof users>,
     posts: Kyselify<typeof posts>,
-    comments: Kyselify<typeof comments>
+    comments: Kyselify<typeof comments>,
+    c: Kyselify<typeof comments>
 };
 
-export const kyselyDb = new Kysely<KyselyDatabase>({
+export const kyselyDb = new Kysely<KDB>({
   dialect: new PostgresDialect({
     pool: new Pool({
         connectionString
