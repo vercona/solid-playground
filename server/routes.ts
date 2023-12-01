@@ -1,6 +1,6 @@
 // import { FastifyInstance } from "fastify";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
-import { SelectQueryBuilder } from "kysely";
+import { SelectQueryBuilder, Kysely } from "kysely";
 import { eq, isNull, sql as rawDrizzleSqlQuery } from "drizzle-orm";
 import { TRPCError, initTRPC } from "@trpc/server";
 import { ZodError, z } from "zod";
@@ -156,7 +156,8 @@ export const routes = router({
       const { post_id } = req.input;
 
       interface Test extends KDB {
-        t:  KDB['comments'] & {
+        c: KDB['comments']
+        t: KDB['comments'] & {
           user_id: string | null
           username: string
           max_children_comment_num: number | null
@@ -192,7 +193,7 @@ export const routes = router({
             "get_children.max_children_comment_num",
           ])
 
-      const response = await kyselyDb
+      const response = await (kyselyDb as any as Kysely<Test>)
         .withRecursive(
           "t(user_id, username, comment_id, content, level, parent_id, comment_num, created_at, is_deleted, max_children_comment_num)",
           db => ( db

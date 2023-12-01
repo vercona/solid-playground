@@ -14,8 +14,7 @@ const connectionString = process.env.DATABASE_URL;
 export interface KDB {
     profiles: Kyselify<typeof users>,
     posts: Kyselify<typeof posts>,
-    comments: Kyselify<typeof comments>,
-    c: Kyselify<typeof comments>
+    comments: Kyselify<typeof comments>
 };
 
 export const kyselyDb = new Kysely<KDB>({
