@@ -1,6 +1,6 @@
 // import { FastifyInstance } from "fastify";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
-import { SelectQueryBuilder, Kysely } from "kysely";
+import { SelectQueryBuilder, QueryCreator } from "kysely";
 import { eq, isNull, sql as rawDrizzleSqlQuery } from "drizzle-orm";
 import { TRPCError, initTRPC } from "@trpc/server";
 import { ZodError, z } from "zod";
@@ -193,10 +193,10 @@ export const routes = router({
             "get_children.max_children_comment_num",
           ])
 
-      const response = await (kyselyDb as any as Kysely<Test>)
+      const response = await kyselyDb
         .withRecursive(
           "t(user_id, username, comment_id, content, level, parent_id, comment_num, created_at, is_deleted, max_children_comment_num)",
-          db => ( db
+          (db: QueryCreator<Test>) => ( db
             .with('c', comments_view)
               .selectFrom("c")
               .$call(reusable)
