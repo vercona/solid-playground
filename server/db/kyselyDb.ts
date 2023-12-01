@@ -11,7 +11,7 @@ if (!process.env.DATABASE_URL) {
 
 const connectionString = process.env.DATABASE_URL;
 
-interface KyselyDatabase {
+export interface KyselyDatabase {
     profiles: Kyselify<typeof users>,
     posts: Kyselify<typeof posts>,
     comments: Kyselify<typeof comments>

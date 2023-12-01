@@ -1,12 +1,12 @@
 // import { FastifyInstance } from "fastify";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
-import { sql } from "kysely";
+import { sql, SelectQueryBuilder, QueryCreator } from "kysely";
 import { eq, isNull, sql as rawDrizzleSqlQuery } from "drizzle-orm";
 import { TRPCError, initTRPC } from "@trpc/server";
 import { ZodError, z } from "zod";
 import { db } from "./db";
 import { comments, commentsTableName, createCommentInput, createPostInput, createUserInput, deleteComment, getAllCommentsInput, getPost, getPostInput, posts, postsTableName, users, usersTableName } from "./db/schemas";
-import { kyselyDb } from "./db/kyselyDb";
+import { kyselyDb, KyselyDatabase } from "./db/kyselyDb";
 import { comments_view } from "./db/views";
 
 export const t = initTRPC.create({
@@ -21,6 +21,44 @@ export const t = initTRPC.create({
     };
   },
 });
+
+interface GetComments extends KyselyDatabase {
+  c: KyselyDatabase["comments"];
+  t: KyselyDatabase["comments"] & {
+    user_id: string | null;
+    username: string;
+    max_children_comment_num: number | null;
+  };
+}
+
+const reusable = (qb: SelectQueryBuilder<GetComments, "c", {}>) =>
+  qb
+    .innerJoin("profiles", "profiles.user_id", "c.user_id")
+    .leftJoinLateral(
+      (eb) =>
+        eb
+          .selectFrom("c as child_comments")
+          .select((eb) =>
+            eb.fn.max("comment_num").as("max_children_comment_num")
+          )
+          .whereRef("child_comments.parent_id", "=", "c.comment_id")
+          .as("get_children"),
+      (jb) => jb.onTrue()
+    )
+    .select([
+      "profiles.user_id",
+      "profiles.username",
+
+      "c.comment_id",
+      "c.content",
+      "c.level",
+      "c.parent_id",
+      "c.comment_num",
+      "c.created_at",
+      "c.is_deleted",
+
+      "get_children.max_children_comment_num",
+    ]);
 
 // interface Comments {
 //   user: string;
