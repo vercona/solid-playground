@@ -9,6 +9,46 @@ import { comments, commentsTableName, createCommentInput, createPostInput, creat
 import { kyselyDb, KDB } from "./db/kyselyDb";
 import { comments_view } from "./db/views";
 
+
+interface Test extends KDB {
+  c: KDB['comments']
+  t: KDB['comments'] & {
+    user_id: string | null
+    username: string
+    max_children_comment_num: number | null
+  }
+}
+
+const reusable = (qb: SelectQueryBuilder<Test, "c", {}>) =>
+  qb
+    .innerJoin("profiles", "profiles.user_id", "c.user_id")
+    .leftJoinLateral(
+      (eb) =>
+        eb
+          .selectFrom("c as child_comments")
+          .select((eb) =>
+            eb.fn.max("comment_num").as("max_children_comment_num"),
+          )
+          .whereRef("child_comments.parent_id", "=", "c.comment_id")
+          .as("get_children"),
+      (jb) => jb.onTrue(),
+    )
+    .select([
+      "profiles.user_id",
+      "profiles.username",
+
+      "c.comment_id",
+      "c.content",
+      "c.level",
+      "c.parent_id",
+      "c.comment_num",
+      "c.created_at",
+      "c.is_deleted",
+
+      "get_children.max_children_comment_num",
+    ])
+
+
 export const t = initTRPC.create({
   errorFormatter({ shape, error }) {
     return {
@@ -146,52 +186,8 @@ export const routes = router({
   }),
   getPostAndComments: publicProcedure
     .input(getAllCommentsInput)
-    // .output(
-    //   z.object({
-    //     post: getPost,
-    //     comments: z.array(CommentsSchema),
-    //   })
-    // )
     .query(async (req) => {
       const { post_id } = req.input;
-
-      interface Test extends KDB {
-        c: KDB['comments']
-        t: KDB['comments'] & {
-          user_id: string | null
-          username: string
-          max_children_comment_num: number | null
-        }
-      }
-
-      const reusable = (qb: SelectQueryBuilder<Test, "c", {}>) =>
-        qb
-          .innerJoin("profiles", "profiles.user_id", "c.user_id")
-          .leftJoinLateral(
-            (eb) =>
-              eb
-                .selectFrom("c as child_comments")
-                .select((eb) =>
-                  eb.fn.max("comment_num").as("max_children_comment_num"),
-                )
-                .whereRef("child_comments.parent_id", "=", "c.comment_id")
-                .as("get_children"),
-            (jb) => jb.onTrue(),
-          )
-          .select([
-            "profiles.user_id",
-            "profiles.username",
-
-            "c.comment_id",
-            "c.content",
-            "c.level",
-            "c.parent_id",
-            "c.comment_num",
-            "c.created_at",
-            "c.is_deleted",
-
-            "get_children.max_children_comment_num",
-          ])
 
       const response = await kyselyDb
         .withRecursive(
