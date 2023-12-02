@@ -32,7 +32,7 @@ const Comment = (props: CommentProps) => {
   const submitReply = async (e: Event) => {
     e.preventDefault();
     try{
-      const response = await submitComment("e274ca42-560c-49ef-95ab-c10511fb8412", post_id(), comment().level + 1, commentText(), comment().comment_id);
+      const response = await submitComment("e274ca42-560c-49ef-95ab-c10511fb8412", post_id(), comment().level + 1, commentText(), comment().comment_num + 1, comment().comment_id);
       props.addComment(pathArr(), response[0]);
       setSettings((currentSettings) => ({...currentSettings, displayForm: false }));
     }catch(err){

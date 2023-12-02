@@ -1,6 +1,6 @@
 import { kyselyDb } from "./kyselyDb";
 
-export const comments_view = kyselyDb
+export const comments_view = () => kyselyDb
   .selectFrom("comments")
   .select((eb) => [
     "comment_id",
@@ -20,9 +20,9 @@ export const comments_view = kyselyDb
       .case()
       .when("is_deleted", "=", true)
       .then(null)
-      .else(eb.ref("content"))
+      .else(eb.ref("body"))
       .end()
-      .as("content"),
+      .as("body"),
     "likes",
     "dislikes",
     "is_deleted",

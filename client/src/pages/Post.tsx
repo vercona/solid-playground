@@ -133,6 +133,7 @@ const Post = () => {
           singlePost()!.post.post_id,
           0,
           commentText(),
+          0
         );
         console.log("respnse", response);
         addComment([], response[0]);

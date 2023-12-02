@@ -27,7 +27,7 @@ export const commentsTableName = "comments";
 // const qb = new QueryBuilder();
 
 export const users = pgTable(usersTableName, {
-  user_id: uuid("user_id").primaryKey().defaultRandom(),
+  user_id: uuid("user_id").primaryKey().defaultRandom().notNull(),
   username: text("username").unique().notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
@@ -44,15 +44,15 @@ export const posts = pgTable(postsTableName, {
 
 export const comments = pgTable(commentsTableName, {
     comment_id: uuid('comment_id').primaryKey().defaultRandom(),
-    comment_num: integer('comment_num'),
+    comment_num: integer('comment_num').notNull(),
     level: integer("level").notNull(),
     parent_id: uuid('parent_id'),
     user_id: uuid('user_id').references(() => users.user_id),
     post_id: uuid('post_id').references(() => posts.post_id).notNull(),
     created_at: timestamp('created_at').defaultNow().notNull(),
-    content: text('content'),
-    likes: integer('likes').default(0),
-    dislikes: integer('dislikes').default(0),
+    body: text('body'),
+    likes: integer('likes').default(0).notNull(),
+    dislikes: integer('dislikes').default(0).notNull(),
     is_deleted: boolean('is_deleted').notNull().default(false),
     id_path: text('id_path')
 });
@@ -90,7 +90,7 @@ export const comments = pgTable(commentsTableName, {
 
 // export const commentsView = pgView("comments_view").as((qb) => qb.select().from(comments));
 
-const userSchema = createSelectSchema(users).omit({ created_at: true });
+
 export const createUserInput = createInsertSchema(users).omit({ user_id: true, created_at: true });
 export const createPostInput = createInsertSchema(posts).omit({ post_id: true, created_at: true });
 export const createCommentInput = createInsertSchema(comments).omit({
@@ -105,4 +105,6 @@ export const deleteComment = createSelectSchema(comments).pick({ comment_id: tru
 export const getPostInput = createSelectSchema(posts).pick({ post_id: true });
 export const getAllCommentsInput = createSelectSchema(comments).pick({ post_id: true });
 
-export const getPost = createSelectSchema(posts).omit({user_id: true}).extend({ created_at: z.string(), user: userSchema });
+const userSchema = createSelectSchema(users)
+  .omit({ created_at: true });
+export const getPost = createSelectSchema(posts).omit({user_id: true}).extend({ created_at: z.date(), user: userSchema });

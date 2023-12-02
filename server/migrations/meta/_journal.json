@@ -134,6 +134,20 @@
       "when": 1700605358566,
       "tag": "0018_tricky_meltdown",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1701477306958,
+      "tag": "0019_small_mesmero",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1701481739018,
+      "tag": "0020_luxuriant_shooting_star",
+      "breakpoints": true
     }
   ]
 }

@@ -47,13 +47,77 @@ const fetchQueries = async () => {
     //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
     //   content: "Testing deletion with Baam",
     // });
+
+    
     const response = await trpc.getPostAndComments.query({
       post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
     });
+
     // const response = await trpc.deleteComment.mutate({
     //   comment_id: "9f1b96dc-fce8-4751-ac9a-ab06c966a826",
     // });
+
     console.log("response", response);
+    // console.log("response deep", response[2].comments[1].comments);
+
+// function getPropByString(objTest, props, pushJson) {
+//   let obj = objTest;
+//   if (!props) return obj;
+
+//   var prop;
+
+//   for (var i = 0, iLen = props.length - 1; i < iLen; i++) {
+//     prop = props[i];
+
+//     var candidate = obj[prop];
+//     if (candidate !== undefined) {
+//       obj = candidate;
+//     } else {
+//       break;
+//     }
+//   }
+//   obj[props[i]].push(pushJson);
+//   // return obj[props[i]];
+//   return objTest;
+// }
+
+// const testJson = [
+//   { test: "test 1", comments: [] },
+//   {
+//     test: "test 2",
+//     comments: [
+//       { test: "sub test 1", comments: [] },
+//       { test: "sub test 2", comments: [] },
+//       {
+//         test: "sub test 3",
+//         comments: [
+//           { test: "level 2 test 1", comments: [] },
+//           {
+//             test: "level 2 test 2",
+//             comments: [
+//               {
+//                 test: "level 3 test 1",
+//                 comments: [],
+//               },
+//             ],
+//           },
+//           { test: "level 2 test 3", comments: [] },
+//         ],
+//       },
+//       { test: "sub test 4", comments: [] },
+//     ],
+//   },
+// ];
+// const indexTest = [1, "comments", 2, "comments", 1, "comments"];
+
+// const newJson = getPropByString(testJson, indexTest, {
+//   test: "level 3 test 2",
+//   comments: [],
+// });
+// console.log("newJson", newJson[1].comments[2].comments[1]);
+
+
+
     // console.log("sql query", response.sql);
     // console.log("response arr", response[0].comments);
     // console.log("response deep", response[0].comments);
@@ -160,9 +224,9 @@ const fetchQueries = async () => {
     // console.log("response", response[0].json_build_object.comments);
     // console.log("response2", response[0]);
   } catch (err) {
-    console.log("error data", err.data);
+    // console.log("error data", err.data);
     // console.log("error data deep", err.data.zodError.fieldErrors);
-    // console.log("error message", err.message);
+    console.log("error", err);
   }
   // console.log("test???")
 };
