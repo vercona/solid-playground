@@ -66,17 +66,17 @@ interface FlatComment {
   comment_id: string;
   username: string | null;
   user_id: string | null;
-  body: string | null;
-  created_at: Date;
-  level: number;
-  is_deleted: boolean;
-  comment_num: number;
   max_child_comment_num: number | null;
-  likes: number;
-  dislikes: number;
   parent_id: string | null;
 };
-const nestComments = (initCommentArr: FlatComment[], parent_id:null|string=null) : Comments[] => {
+
+// lmao this typing
+type Test<J extends FlatComment> = Omit<J, "user_id" | "username"> & {
+  user: { user_id: J['user_id'], username: J['username'] },
+  comments: Test<J>[]
+}
+
+const nestComments = <T extends FlatComment>(initCommentArr: T[], parent_id:null|string=null) : Test<T>[]  => {
   const comments = initCommentArr.filter(eachComment => eachComment.parent_id === parent_id);
 
   return comments.map(comment => {
@@ -268,7 +268,7 @@ export const routes = router({
         });
       }
 
-      const nestedComments = nestComments(getCommentsRes);
+      const nestedComments = nestComments(getCommentsRes) as Comments[]
       
       const {user_id, username, created_at, title, description} = getPostsAndUsersRes[0];
       return {
