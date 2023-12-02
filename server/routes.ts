@@ -237,27 +237,23 @@ export const routes = router({
         });
       }
 
-      const firstLevelComments = getCommentsRes.filter(comment => comment.level === 0);
-      
-      const buildNestedComments = (comments: typeof getCommentsRes): Comments[] => {
-        const nestedComments = comments.map(comment => {
+      const buildNestedComments = (parent_id:null|string=null) : Comments[] => {
+        const comments = getCommentsRes.filter(eachComment => eachComment.parent_id === parent_id) as typeof getCommentsRes;
+
+        return comments.map(comment => {
           const { user_id, username, ...formattedComment } = comment;
 
-          if(comment.max_child_comment_num === null){
-            return {...formattedComment, user: { user_id: comment.user_id, username: comment.username },  comments: []}
-          }else{
-            const childComments = getCommentsRes.filter(eachComment => eachComment.parent_id === comment.comment_id);
-            return {
-              ...formattedComment,
-              user: { user_id: comment.user_id, username: comment.username },
-              comments: buildNestedComments(childComments),
-            };
+          let childComments = comment.max_child_comment_num === null ? [] : buildNestedComments(comment.comment_id)
+
+          return {
+            ...formattedComment,
+            user: { user_id, username },
+            comments: childComments
           }
-        });
-        return nestedComments
+        })
       }
 
-      const nestedComments = buildNestedComments(firstLevelComments);
+      const nestedComments = buildNestedComments();
       
       const {user_id, username, created_at, title, description} = getPostsAndUsersRes[0];
       return {
