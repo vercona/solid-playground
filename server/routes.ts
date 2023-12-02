@@ -62,6 +62,36 @@ const reusable = (qb: SelectQueryBuilder<GetComments, "c", {}>) =>
       "c.dislikes"
     ]);
 
+interface FlatComment {
+  comment_id: string;
+  username: string | null;
+  user_id: string | null;
+  body: string | null;
+  created_at: Date;
+  level: number;
+  is_deleted: boolean;
+  comment_num: number;
+  max_child_comment_num: number | null;
+  likes: number;
+  dislikes: number;
+  parent_id: string | null;
+};
+const nestComments = (initCommentArr: FlatComment[], parent_id:null|string=null) : Comments[] => {
+  const comments = initCommentArr.filter(eachComment => eachComment.parent_id === parent_id);
+
+  return comments.map(comment => {
+    const { user_id, username, ...formattedComment } = comment;
+
+    let childComments = comment.max_child_comment_num === null ? [] : nestComments(initCommentArr, comment.comment_id)
+
+    return {
+      ...formattedComment,
+      user: { user_id, username },
+      comments: childComments
+    }
+  })
+}
+
 // interface Comments {
 //   user: string;
 // }
@@ -107,7 +137,8 @@ interface Comments {
   likes: number;
   dislikes: number;
   comments: Comments[];
-}
+  // parent_id: string | null;
+};
 
 const CommentsSchema: z.ZodType<Comments> = z.lazy(() =>
   z.object({
@@ -237,23 +268,7 @@ export const routes = router({
         });
       }
 
-      const buildNestedComments = (parent_id:null|string=null) : Comments[] => {
-        const comments = getCommentsRes.filter(eachComment => eachComment.parent_id === parent_id) as typeof getCommentsRes;
-
-        return comments.map(comment => {
-          const { user_id, username, ...formattedComment } = comment;
-
-          let childComments = comment.max_child_comment_num === null ? [] : buildNestedComments(comment.comment_id)
-
-          return {
-            ...formattedComment,
-            user: { user_id, username },
-            comments: childComments
-          }
-        })
-      }
-
-      const nestedComments = buildNestedComments();
+      const nestedComments = nestComments(getCommentsRes);
       
       const {user_id, username, created_at, title, description} = getPostsAndUsersRes[0];
       return {
