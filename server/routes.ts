@@ -22,6 +22,9 @@ export const t = initTRPC.create({
   },
 });
 
+export const router = t.router;
+export const publicProcedure = t.procedure;
+
 interface GetComments extends KyselyDatabase {
   c: KyselyDatabase["comments"];
   t: KyselyDatabase["comments"] & {
@@ -62,35 +65,45 @@ const reusable = (qb: SelectQueryBuilder<GetComments, "c", {}>) =>
       "c.dislikes"
     ]);
 
-// interface Comments {
-//   user: string;
-// }
-// const insertUser = async (user: string) => {
-//   return db.insert(commentsSchema).values({user});
-// };
+interface FlatComment {
+  comment_id: string;
+  username: string | null;
+  user_id: string | null;
+  body: string | null;
+  created_at: Date;
+  level: number;
+  is_deleted: boolean;
+  comment_num: number;
+  max_child_comment_num: number | null;
+  likes: number;
+  dislikes: number;
+  parent_id: string | null;
+}
 
-// async function routes(fastify: FastifyInstance) {
-//   fastify.get("/", async () => {
-//     const allUsers = await db.select().from(commentsSchema);
-//     console.log("test now", allUsers);
-//     return { hello: "world" };
-//   });
-//   fastify.post<{Body: string}>("/addUser", async (request) => {
-//     // const allUsers = await db.select().from(applications);
-//     // console.log("test", allUsers);
-//     // const { } = request.body;
-//     const formattedBody: Comments = JSON.parse(request.body);
-//     console.log("typeof", typeof formattedBody);
-//     console.log("formattedBody", formattedBody);
-//     const user = insertUser(formattedBody.user);
-//     return { add: "user", user };
-//   });
-// }
+const nestComments = (
+  initCommentArr: FlatComment[],
+  parent_id: null | string = null
+): Comments[] => {
+  const comments = initCommentArr.filter(
+    (eachComment) => eachComment.parent_id === parent_id
+  );
 
-// export default routes;
+  return comments.map((comment) => {
+    const { user_id, username, ...formattedComment } = comment;
 
-export const router = t.router;
-export const publicProcedure = t.procedure;
+    let childComments =
+      comment.max_child_comment_num === null
+        ? []
+        : nestComments(initCommentArr, comment.comment_id);
+
+    return {
+      ...formattedComment,
+      user: { user_id, username },
+      comments: childComments,
+    };
+  });
+};
+
 
 interface Comments {
   comment_id: string;
@@ -229,7 +242,6 @@ export const routes = router({
           .where("post_id", '=', post_id)
           .execute()
 
-      console.log("getPostsAndUsersRes", getPostsAndUsersRes);
       if (getPostsAndUsersRes.length === 0) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -237,29 +249,11 @@ export const routes = router({
         });
       }
 
-      const firstLevelComments = getCommentsRes.filter(comment => comment.level === 0);
-      
-      const buildNestedComments = (comments: typeof getCommentsRes): Comments[] => {
-        const nestedComments = comments.map(comment => {
-          const { user_id, username, ...formattedComment } = comment;
+      const nestedComments = nestComments(getCommentsRes);
 
-          if(comment.max_child_comment_num === null){
-            return {...formattedComment, user: { user_id: comment.user_id, username: comment.username },  comments: []}
-          }else{
-            const childComments = getCommentsRes.filter(eachComment => eachComment.parent_id === comment.comment_id);
-            return {
-              ...formattedComment,
-              user: { user_id: comment.user_id, username: comment.username },
-              comments: buildNestedComments(childComments),
-            };
-          }
-        });
-        return nestedComments
-      }
+      const { user_id, username, created_at, title, description } =
+        getPostsAndUsersRes[0];
 
-      const nestedComments = buildNestedComments(firstLevelComments);
-      
-      const {user_id, username, created_at, title, description} = getPostsAndUsersRes[0];
       return {
         post: {
           post_id: getPostsAndUsersRes[0].post_id,
@@ -268,10 +262,10 @@ export const routes = router({
           created_at,
           user: {
             user_id,
-            username
-          }
+            username,
+          },
         },
-        comments: nestedComments
+        comments: nestedComments,
       };
     }),
   createComment: publicProcedure

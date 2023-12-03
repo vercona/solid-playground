@@ -58,7 +58,7 @@ const fetchQueries = async () => {
     // });
 
     console.log("response", response);
-    // console.log("response deep", response[2].comments[1].comments);
+    // console.log("response deep", response.comments);
 
 // function getPropByString(objTest, props, pushJson) {
 //   let obj = objTest;
