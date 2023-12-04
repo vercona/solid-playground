@@ -5,7 +5,7 @@ import { eq, isNull, sql as rawDrizzleSqlQuery } from "drizzle-orm";
 import { TRPCError, initTRPC } from "@trpc/server";
 import { ZodError, z } from "zod";
 import { db } from "./db";
-import { comments, commentsTableName, createCommentInput, createPostInput, createUserInput, deleteComment, getAllCommentsInput, getPost, getPostInput, posts, postsTableName, users, usersTableName } from "./db/schemas";
+import { comments, commentsTableName, createCommentInput, createPostInput, createUserInput, deleteComment, getAllCommentsInput, getRepliedComments, getPost, getPostInput, posts, postsTableName, users, usersTableName } from "./db/schemas";
 import { kyselyDb, KyselyDatabase } from "./db/kyselyDb";
 import { comments_view } from "./db/views";
 
@@ -201,6 +201,53 @@ export const routes = router({
       .executeTakeFirstOrThrow();
     return response;
   }),
+  getRepliedComments: publicProcedure.input(getRepliedComments).query(async (req) => {
+    const { post_id, parent_id, beginCommentNum, endCommentNum, levelLimit } = req.input;
+
+    const paginationQueries = (qb: SelectQueryBuilder<GetComments, "c", {}>) => {
+      const baseQuery = qb
+        .$call(reusable)
+        .where("c.comment_num", ">=", beginCommentNum)
+        .where("c.comment_num", "<", endCommentNum);
+      
+      if(levelLimit){
+        return baseQuery.where("c.level", "<=", levelLimit)
+      }
+
+      return baseQuery;
+    }
+
+    const getCommentsRes = await kyselyDb
+      .withRecursive(
+        "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes)",
+        (db: QueryCreator<GetComments>) =>
+          db
+            .with("c", comments_view)
+            .selectFrom("c")
+            .$call(paginationQueries)
+            .where("parent_id", "=", parent_id)
+            .where("post_id", "=", post_id)
+            .unionAll((db) =>
+              db
+                .selectFrom("t")
+                .innerJoin("c", "c.parent_id", "t.comment_id")
+                .$call(paginationQueries)
+            )
+      )
+      .selectFrom("t")
+      .selectAll()
+      .orderBy("created_at")
+      .execute();
+
+    if (getCommentsRes.length === 0) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Comments not found",
+      });
+    }
+
+    return getCommentsRes;
+  }),
   getPostAndComments: publicProcedure
     .input(getAllCommentsInput)
     .output(
@@ -328,6 +375,14 @@ export const routes = router({
       .where("comment_id", "=", input.comment_id)
       .returning("comment_id")
       .execute()
+
+    if (response.length === 0) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Comment not found",
+      });
+    }
+
     return response;
   }),
   removeCommentEntirely: publicProcedure

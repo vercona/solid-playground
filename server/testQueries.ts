@@ -49,13 +49,22 @@ const fetchQueries = async () => {
     // });
 
     
-    const response = await trpc.getPostAndComments.query({
-      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
-    });
+    // const response = await trpc.getPostAndComments.query({
+    //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+    // });
 
     // const response = await trpc.deleteComment.mutate({
-    //   comment_id: "9f1b96dc-fce8-4751-ac9a-ab06c966a826",
+    //   comment_id: "9f1b96dc-fce8-4751-ac9a-ab06c966a820",
     // });
+
+    const response = await trpc.getRepliedComments.query({
+      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+      // parent_id: "c0395394-365c-4f1b-b079-2efd01cb751c",
+      parent_id: "1259e113-6412-4b95-84b0-b13e6453eaaa",
+      beginCommentNum: 0,
+      endCommentNum: 3
+      // levelLimit: 1
+    });
 
     console.log("response", response);
     // console.log("response deep", response.comments);
