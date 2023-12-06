@@ -54,7 +54,7 @@ export const comments = pgTable(commentsTableName, {
     likes: integer('likes').default(0).notNull(),
     dislikes: integer('dislikes').default(0).notNull(),
     is_deleted: boolean('is_deleted').notNull().default(false),
-    id_path: text('id_path')
+    num_of_children: integer('num_of_children').notNull().default(0)
 });
 
 
@@ -98,6 +98,7 @@ export const createCommentInput = createInsertSchema(comments).omit({
   dislikes: true,
   likes: true,
   created_at: true,
+  comment_num: true
 });
 export const deleteComment = createSelectSchema(comments).pick({ comment_id: true });
 

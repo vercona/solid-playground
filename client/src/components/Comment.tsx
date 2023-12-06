@@ -1,8 +1,8 @@
 import { For, Show, createSignal, createEffect } from "solid-js";
 import { destructure } from "@solid-primitives/destructure";
-import { calcTimeDifference, getSentTimeMessage } from "../utils/utilFunctions";
+import { calcTimeDifference, formatErrorUrl, getSentTimeMessage } from "../utils/utilFunctions";
 import { deleteComment, submitComment } from "../apiCalls/CommentSectionCalls";
-import type { Comment as CommentType, PathArray } from "../utils/interfaces";
+import type { Comment as CommentType, ErrorType, PathArray } from "../utils/interfaces";
 import ReplyCommentField from "./ReplyCommentField";
 
 interface CommentProps {
@@ -22,6 +22,10 @@ const Comment = (props: CommentProps) => {
   const [settings, setSettings] = createSignal({
     isExpanded: false,
     displayForm: false,
+    error: {
+      display: false,
+      errorMessage: ''
+    }
   });
 
   const timeDifference = calcTimeDifference(
@@ -32,11 +36,24 @@ const Comment = (props: CommentProps) => {
   const submitReply = async (e: Event) => {
     e.preventDefault();
     try{
-      const response = await submitComment("e274ca42-560c-49ef-95ab-c10511fb8412", post_id(), comment().level + 1, commentText(), comment().comment_num + 1, comment().comment_id);
+      const response = await submitComment(
+        "e274ca42-560c-49ef-95ab-c10511fb8412",
+        // post_id(),
+        "e0257a7a-8f56-4b72-beb3-85093faa9f10",
+        comment().level + 1,
+        commentText(),
+        comment().comment_id
+        // "e0257a7a-8f56-4b72-beb3-85093faa9f10"
+      );
       props.addComment(pathArr(), response[0]);
       setSettings((currentSettings) => ({...currentSettings, displayForm: false }));
     }catch(err){
       console.log("submit err", err)
+      const formattedError = formatErrorUrl(err as ErrorType);
+      setSettings({
+        ...settings(),
+        error: { display: true, errorMessage: formattedError.errorMessage },
+      });
     }
   };
 
@@ -49,16 +66,21 @@ const Comment = (props: CommentProps) => {
     try{
       if (typeof index === 'number'){
         await deleteComment(comment().comment_id);
+        // await deleteComment("e0257a7a-8f56-4b72-beb3-85093faa9f10");
+        // await deleteComment("");
         props.deleteCommentFromStore(pathArr(), index);
       }
     }catch(err){
-      console.log("delete err", err)
+      // console.log("delete err", err)
+      const formattedError = formatErrorUrl(err as ErrorType);
+      setSettings({...settings(), error: {display: true, errorMessage: formattedError.errorMessage}})
+      console.log("formattedError", formattedError);
     }
   };
 
-  createEffect(() => {
-    console.log("comment().is_deleted", comment().is_deleted);
-  });
+  // createEffect(() => {
+  //   console.log("comment().is_deleted", comment().is_deleted);
+  // });
 
   console.log("this comment", comment())
   return (
@@ -94,24 +116,6 @@ const Comment = (props: CommentProps) => {
             Delete comment
           </button>
         </Show>
-        {/* <button
-          onClick={() =>
-            addComment(pathArr, {
-              comment_id: "bad05359-daa0-4528-a858-9ce85d1015e6",
-              user: {
-                username: "TESTING USERNAME",
-                user_id: "f47bd701-8b9c-412b-a0a7-4fdce781cdf4",
-              },
-              body: "TESTING COMMENT",
-              created_at: "2023-11-03T23:23:02.031723",
-              level: 9000,
-              comments: [],
-            })
-          }
-          class="px-2 border-2 mx-2 border-rose-900"
-        >
-          Test addcomment
-        </button> */}
       </div>
       <Show when={settings().displayForm}>
         <ReplyCommentField
@@ -128,30 +132,9 @@ const Comment = (props: CommentProps) => {
             }))
           }
         />
-        {/* <form onSubmit={submitReply} class="flex flex-col">
-          <label>Replying to {comment.user.username}</label>
-          <textarea
-            rows={"4"}
-            cols={"50"}
-            class="bg-black border-2 border-white w-3/4"
-            value={commentText()}
-            onInput={(e) => handleCommentInput(e.target.value)}
-          />
-          <div>
-            <button
-              class="px-2"
-              onClick={() =>
-                setSettings((currentSettings) => ({
-                  ...currentSettings,
-                  displayForm: false,
-                }))
-              }
-            >
-              Cancel
-            </button>
-            <input class="py-2" type="submit" value={"Submit"} />
-          </div>
-        </form> */}
+      </Show>
+      <Show when={settings().error.display}>
+        <div class="text-red-600">{settings().error.errorMessage}</div>
       </Show>
       <Show when={comment().comments.length !== 0}>
         <button

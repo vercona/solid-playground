@@ -132,8 +132,7 @@ const Post = () => {
           "e274ca42-560c-49ef-95ab-c10511fb8412",
           singlePost()!.post.post_id,
           0,
-          commentText(),
-          0
+          commentText()
         );
         console.log("respnse", response);
         addComment([], response[0]);
@@ -151,11 +150,13 @@ const Post = () => {
     setCommentText(textAreaValue);
   };
 
-  createEffect(() => {
-    console.log("singlePost()", singlePost());
-    // console.log("singlePost isPending", singlePost.loading);
-    // console.log("singlePost latest", singlePost.latest);
-  });
+  // createEffect(() => {
+  //   console.log("singlePost()", singlePost());
+  //   console.log("singlePost() error", singlePost.error);
+
+  //   // console.log("singlePost isPending", singlePost.loading);
+  //   // console.log("singlePost latest", singlePost.latest);
+  // });
 
   return (
     <ErrorBoundary

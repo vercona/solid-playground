@@ -1,9 +1,4 @@
-interface ErrorType {
-    message: string;
-    data: {
-        httpStatus: number
-    }
-}
+import { ErrorType } from "./interfaces";
 
 interface TimeDifference {
   minutes: number;
@@ -14,10 +9,27 @@ interface TimeDifference {
   years: number;
 }
 
+const isJson = (str: string) => {
+  try {
+    JSON.parse(str);
+  } catch (e) {
+    return false;
+  }
+  return true;
+}
 export const formatErrorUrl = (errorObj: ErrorType) => {
     const statusCode = (errorObj.data && errorObj.data.httpStatus) || "Error";
-    const errorMessage =
-        errorObj.message || "We ran into a problem. Please come back later!";
+    let errorMessage;
+
+    const isErrObjJson = isJson(errorObj.message);
+    if (errorObj.data && errorObj.data.inputValidationError && isErrObjJson){
+      const parsedErrorMessage = JSON.parse(errorObj.message)
+      errorMessage = parsedErrorMessage[0].message;
+    }else if( typeof errorObj.message === "string"){
+      errorMessage = errorObj.message;
+    } else{
+      errorMessage = "We ran into a problem. Please come back later!";
+    }
     return {
         statusCode,
         errorMessage

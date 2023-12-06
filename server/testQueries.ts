@@ -41,197 +41,37 @@ const fetchQueries = async () => {
     //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
     // });
     // const response = await trpc.createComment.mutate({
-    //   level: 2,
-    //   parent_id: "c0395394-365c-4f1b-b079-2efd01cb751c",
+    //   level: 1,
+    //   // parent_id: "ff3729a3-5848-482c-a730-cde859405b03",
+    //   parent_id: "e0257a7a-8f56-4b72-beb3-85093faa9f1c",
+    //   // parent_id: null,
     //   user_id: Baam,
     //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
-    //   content: "Testing deletion with Baam",
+    //   // post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b97",
+    //   body: "Testing new create with Baam",
+    //   // body: "First level comment with Baam",
     // });
 
     
-    // const response = await trpc.getPostAndComments.query({
-    //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
-    // });
+    const response = await trpc.getPostAndComments.query({
+      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+    });
 
     // const response = await trpc.deleteComment.mutate({
     //   comment_id: "9f1b96dc-fce8-4751-ac9a-ab06c966a820",
     // });
 
-    const response = await trpc.getRepliedComments.query({
-      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
-      // parent_id: "c0395394-365c-4f1b-b079-2efd01cb751c",
-      parent_id: "1259e113-6412-4b95-84b0-b13e6453eaaa",
-      beginCommentNum: 0,
-      endCommentNum: 3
-      // levelLimit: 1
-    });
+    // const response = await trpc.getRepliedComments.query({
+    //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+    //   // parent_id: "c0395394-365c-4f1b-b079-2efd01cb751c",
+    //   parent_id: "1259e113-6412-4b95-84b0-b13e6453eaaa",
+    //   beginCommentNum: 0,
+    //   endCommentNum: 3
+    //   // levelLimit: 1
+    // });
 
     console.log("response", response);
     // console.log("response deep", response.comments);
-
-// function getPropByString(objTest, props, pushJson) {
-//   let obj = objTest;
-//   if (!props) return obj;
-
-//   var prop;
-
-//   for (var i = 0, iLen = props.length - 1; i < iLen; i++) {
-//     prop = props[i];
-
-//     var candidate = obj[prop];
-//     if (candidate !== undefined) {
-//       obj = candidate;
-//     } else {
-//       break;
-//     }
-//   }
-//   obj[props[i]].push(pushJson);
-//   // return obj[props[i]];
-//   return objTest;
-// }
-
-// const testJson = [
-//   { test: "test 1", comments: [] },
-//   {
-//     test: "test 2",
-//     comments: [
-//       { test: "sub test 1", comments: [] },
-//       { test: "sub test 2", comments: [] },
-//       {
-//         test: "sub test 3",
-//         comments: [
-//           { test: "level 2 test 1", comments: [] },
-//           {
-//             test: "level 2 test 2",
-//             comments: [
-//               {
-//                 test: "level 3 test 1",
-//                 comments: [],
-//               },
-//             ],
-//           },
-//           { test: "level 2 test 3", comments: [] },
-//         ],
-//       },
-//       { test: "sub test 4", comments: [] },
-//     ],
-//   },
-// ];
-// const indexTest = [1, "comments", 2, "comments", 1, "comments"];
-
-// const newJson = getPropByString(testJson, indexTest, {
-//   test: "level 3 test 2",
-//   comments: [],
-// });
-// console.log("newJson", newJson[1].comments[2].comments[1]);
-
-
-
-    // console.log("sql query", response.sql);
-    // console.log("response arr", response[0].comments);
-    // console.log("response deep", response[0].comments);
-
-    // console.log("response 0", response[0].json_build_object.comments.comments);
-    // console.log("response deep", response[0].json_build_object.comments.comments[0].comments);
-    // console.log("response 2 deep", response[0].json_build_object.comments.comments[2]);
-    // console.log(
-    //   "response 2 deeper",
-    //   response[0].json_build_object.comments.comments[2].comments
-    // );
-    // console.log(
-    //   "response 2 deeper deeper",
-    //   response[0].json_build_object.comments.comments[2].comments[1].comments
-    // );
-
-    // console.log("response 0", response[0].replies);
-    //   sponse 0 [
-    // {
-    //   comment_id: '9d410560-3c7b-468c-a126-096e8eaeddff',
-    //   user: {
-    //     username: 'Sally',
-    //     user_id: 'cf5bacfd-9aa6-406d-9db0-b65bf02ad491'
-    //   },
-    //   body: 'Second level by Sally',
-    //   created_at: '2023-11-03T22:59:16.740412',
-    //   level: 1,
-    //   is_deleted: false,
-    //   comments: []
-    // },
-    // {
-    //   comment_id: '1e6da183-8058-432e-b065-e6d0b9e0a46b',
-    //   user: {
-    //     username: 'Billy',
-    //     user_id: 'b607935e-07a2-4558-8c55-bc1937dcbd74'
-    //   },
-    //   body: 'Second level by Billy',
-    //   created_at: '2023-11-03T23:22:05.879602',
-    //   level: 1,
-    //   is_deleted: false,
-    //   comments: []
-    // },
-    // {
-    //   comment_id: '9f1b96dc-fce8-4751-ac9a-ab06c966a826',
-    //   user: {
-    //     username: 'Saitama',
-    //     user_id: 'e274ca42-560c-49ef-95ab-c10511fb8412'
-    //   },
-    //   body: 'Testing this comment',
-    //   created_at: '2023-11-18T00:04:50.405305',
-    //   level: 1,
-    //   is_deleted: true,
-    //   comments: []
-    // }
-    // {
-    //     comment_id: '9d410560-3c7b-468c-a126-096e8eaeddff',
-    //     user: {
-    //       username: 'Sally',
-    //       user_id: 'cf5bacfd-9aa6-406d-9db0-b65bf02ad491'
-    //     },
-    //     body: 'Second level by Sally',
-    //     created_at: '2023-11-03T22:59:16.740412',
-    //     level: 1,
-    //     is_deleted: false,
-    //     comments: []
-    //   },
-    //   {
-    //     comment_id: '1e6da183-8058-432e-b065-e6d0b9e0a46b',
-    //     user: {
-    //       username: 'Billy',
-    //       user_id: 'b607935e-07a2-4558-8c55-bc1937dcbd74'
-    //     },
-    //     body: 'Second level by Billy',
-    //     created_at: '2023-11-03T23:22:05.879602',
-    //     level: 1,
-    //     is_deleted: false,
-    //     comments: []
-    //   },
-    //   {
-    //     comment_id: '9f1b96dc-fce8-4751-ac9a-ab06c966a826',
-    //     user: { username: null, user_id: null },
-    //     body: null,
-    //     created_at: '2023-11-18T00:04:50.405305',
-    //     level: 1,
-    //     is_deleted: true,
-    //     comments: []
-    //   }
-    //   comment_id,
-    // level,
-    // parent_id,
-    // CASE
-    //   WHEN is_deleted = true THEN null
-    //   ELSE user_id
-    // END AS sanitized_user,
-    // post_id,
-    // created_at,
-    // CASE
-    //   WHEN is_deleted = true THEN null
-    //   ELSE content
-    // END AS sanitized_content,
-    // likes,
-    // dislikes,
-    // is_deleted
-    // console.log("response", response[0].json_build_object.comments);
-    // console.log("response2", response[0]);
   } catch (err) {
     // console.log("error data", err.data);
     // console.log("error data deep", err.data.zodError.fieldErrors);
