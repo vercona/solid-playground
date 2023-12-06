@@ -40,21 +40,25 @@ export const posts = pgTable(postsTableName, {
   title: text("title").notNull(),
   description: text("description"),
   created_at: timestamp("created_at").defaultNow().notNull(),
+  num_of_children: integer("num_of_children").notNull().default(0),
 });
 
 export const comments = pgTable(commentsTableName, {
-    comment_id: uuid('comment_id').primaryKey().defaultRandom(),
-    comment_num: integer('comment_num').notNull(),
-    level: integer("level").notNull(),
-    parent_id: uuid('parent_id'),
-    user_id: uuid('user_id').references(() => users.user_id),
-    post_id: uuid('post_id').references(() => posts.post_id).notNull(),
-    created_at: timestamp('created_at').defaultNow().notNull(),
-    body: text('body'),
-    likes: integer('likes').default(0).notNull(),
-    dislikes: integer('dislikes').default(0).notNull(),
-    is_deleted: boolean('is_deleted').notNull().default(false),
-    num_of_children: integer('num_of_children').notNull().default(0)
+  comment_id: uuid("comment_id").primaryKey().defaultRandom(),
+  comment_num: integer("comment_num").notNull(),
+  level: integer("level").notNull(),
+  parent_id: uuid("parent_id"),
+  user_id: uuid("user_id").references(() => users.user_id),
+  post_id: uuid("post_id")
+    .references(() => posts.post_id)
+    .notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  body: text("body"),
+  likes: integer("likes").default(0).notNull(),
+  dislikes: integer("dislikes").default(0).notNull(),
+  is_deleted: boolean("is_deleted").notNull().default(false),
+  // num_of_replies: integer('num_of_replies').notNull().default(0)
+  num_of_children: integer("num_of_children").notNull().default(0),
 });
 
 

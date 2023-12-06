@@ -65,7 +65,8 @@ const reusable = (qb: SelectQueryBuilder<GetComments, "c", {}>) =>
 
       "get_children.max_child_comment_num",
       "c.likes",
-      "c.dislikes"
+      "c.dislikes",
+      "c.num_of_children"
     ]);
 
 interface FlatComment {
@@ -81,6 +82,7 @@ interface FlatComment {
   likes: number;
   dislikes: number;
   parent_id: string | null;
+  num_of_children: number;
 }
 
 const nestComments = (
@@ -122,6 +124,7 @@ interface Comments {
   max_child_comment_num: number | null;
   likes: number;
   dislikes: number;
+  num_of_children: number;
   comments: Comments[];
 }
 
@@ -140,6 +143,7 @@ const CommentsSchema: z.ZodType<Comments> = z.lazy(() =>
     max_child_comment_num: z.number().nullable(),
     likes: z.number(),
     dislikes: z.number(),
+    num_of_children: z.number(),
     comments: z.array(CommentsSchema),
   }).refine((comment) => {
     if(comment.is_deleted){
@@ -222,7 +226,7 @@ export const routes = router({
 
     const getCommentsRes = await kyselyDb
       .withRecursive(
-        "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes)",
+        "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes, num_of_children)",
         (db: QueryCreator<GetComments>) =>
           db
             .with("c", comments_view)
@@ -263,7 +267,7 @@ export const routes = router({
       const { post_id } = req.input;
       const getCommentsRes = await kyselyDb
         .withRecursive(
-          "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes)",
+          "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes, num_of_children)",
           (db: QueryCreator<GetComments>) =>
             db
               .with("c", comments_view)
@@ -277,8 +281,7 @@ export const routes = router({
                   .selectFrom("t")
                   .innerJoin("c", "c.parent_id", "t.comment_id")
                   .$call(reusable)
-                  // .where("c.comment_num", "<", 10)
-                  .limit(5)
+                  .where("c.comment_num", "<", 10)
               )
         )
         .selectFrom("t")
@@ -289,11 +292,10 @@ export const routes = router({
       const getPostsAndUsersRes = await kyselyDb
           .selectFrom("posts")
           .innerJoin("profiles", "posts.user_id", "profiles.user_id")
-          .select(["posts.created_at", "description", "profiles.user_id", "username", "title", "post_id"])
+          .select(["posts.created_at", "description", "profiles.user_id", "username", "title", "post_id", "num_of_children"])
           .where("post_id", '=', post_id)
-          .execute()
+          .execute();
 
-      console.log("getPostsAndUsersRes", getPostsAndUsersRes);
       if (getPostsAndUsersRes.length === 0) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -303,7 +305,7 @@ export const routes = router({
 
       const nestedComments = nestComments(getCommentsRes);
 
-      const { user_id, username, created_at, title, description } =
+      const { user_id, username, created_at, title, description, num_of_children } =
         getPostsAndUsersRes[0];
 
       return {
@@ -312,6 +314,7 @@ export const routes = router({
           description,
           title,
           created_at,
+          num_of_children,
           user: {
             user_id,
             username,
@@ -325,169 +328,83 @@ export const routes = router({
     .mutation(async (req) => {
       const { parent_id, level, user_id, post_id, body } = req.input;
 
-      // const response = await kyselyDb
-      //   .with('comment_row', (withQuery) => withQuery
-      //     .insertInto("comments")
-      //     .values({
-      //       level,
-      //       parent_id,
-      //       user_id,
-      //       post_id,
-      //       body,
-      //       comment_num
-      //     })
-      //     .returning(['comment_id', 'body', 'level', 'created_at', 'user_id', 'likes', 'dislikes', 'comment_num', 'is_deleted'])
-      //   )
-      //   // .with('parent_comment', (parentQuery) => parentQuery.updateTable('comments').set())
-      //   .selectFrom('comment_row')
-      //   .leftJoin('profiles as users', (join) => join.onRef("users.user_id", '=', 'comment_row.user_id'))
-      //   .select(['comment_id', "body", "level", "comment_row.created_at", "users.user_id", "users.username", 'likes', 'dislikes', 'comment_num', 'is_deleted'])
-      //   .execute()
-      let response;
-      if(parent_id && level !== 0){
-        response = await kyselyDb
-          .with("comment_row", (withQuery) =>
-            withQuery
+      const response = await kyselyDb
+        .with("comment_pagination", (withQuery) => {
+          if (parent_id && level !== 0) {
+            return withQuery
               .updateTable("comments")
               .set((eb) => ({
                 num_of_children: eb("num_of_children", "+", 1),
               }))
               .where("comment_id", "=", parent_id)
-              .returningAll()
-          )
-          // .selectFrom("comment_row")
-          // .select(["num_of_replies"])
-          .with("insert_comment", (withQuery) =>
-            withQuery
-              .insertInto("comments")
-              .columns([
-                "parent_id",
-                "level",
-                "user_id",
-                "post_id",
-                "body",
-                "num_of_children",
-                "comment_num"
-              ])
-              .expression((eb) =>
-                eb
-                  .selectFrom("comment_row")
-                  .select((eb) => [
-                    eb.val(parent_id).as("parent_id"),
-                    eb.val(level).as("level"),
-                    eb.val(user_id).as("user_id"),
-                    eb.val(post_id).as("post_id"),
-                    eb.val(body).as("body"),
-                    eb.val(0).as("num_of_children"),
-                    eb("comment_row.num_of_children", "-", 1).as("comment_num"),
-                  ])
-              )
-              .returningAll()
-          )
-          .selectFrom("insert_comment")
-          .leftJoin("profiles as users", (join) =>
-            join.onRef("users.user_id", "=", "insert_comment.user_id")
-          )
-          // .selectAll()
-          .select([
-            "comment_id",
-            "body",
-            "level",
-            "insert_comment.created_at",
-            "users.user_id",
-            "users.username",
-            "likes",
-            "dislikes",
-            "comment_num",
-            "is_deleted",
-            "num_of_children",
-          ])
-          .execute();
-
-          // .insertInto("comments")
-          // .columns([
-          //   "parent_id",
-          //   "level",
-          //   "user_id",
-          //   "post_id",
-          //   "body",
-          //   "num_of_replies",
-          //   "comment_num",
-          // ])
-          // .expression((eb) =>
-          //   eb
-          //     .selectFrom("comment_row")
-          //     .select((eb) => [
-          //       eb.val(parent_id).as("parent_id"),
-          //       eb.val(level).as("level"),
-          //       eb.val(user_id).as("user_id"),
-          //       eb.val(post_id).as("post_id"),
-          //       eb.val(body).as("body"),
-          //       eb.val(0).as("num_of_replies"),
-          //       eb("comment_row.num_of_replies", "-", 1).as("comment_num"),
-          //     ])
-          // )
-          // .compile();
-
-        console.log("response", response)
-        return response;
-      }else{
-        response = await kyselyDb
-          .with("comment_row", (withQuery) =>
-            withQuery
-              .selectFrom("comments")
-              .select((eb) => [eb.fn.max("comment_num").as("max_comment_num")])
+              .returningAll();
+          } else {
+            return withQuery
+              .updateTable("posts")
+              .set((eb) => ({
+                num_of_children: eb("num_of_children", "+", 1),
+              }))
               .where("post_id", "=", post_id)
-              .where("level", "=", 0)
-          )
-          .insertInto("comments")
-          .columns([
-            "parent_id",
-            "level",
-            "user_id",
-            "post_id",
-            "body",
-            "num_of_children",
-            "comment_num",
-          ])
-          .expression((eb) =>
-            eb
-              .selectFrom("comment_row")
-              .select((eb) => [
-                eb.val(parent_id).as("parent_id"),
-                eb.val(level).as("level"),
-                eb.val(user_id).as("user_id"),
-                eb.val(post_id).as("post_id"),
-                eb.val(body).as("body"),
-                eb.val(0).as("num_of_children"),
-                eb("max_comment_num", "+", 1).as("comment_num"),
-              ])
-          )
-          .returningAll()
-          // .compile();
-          .execute();
-          return response;
-      }
-      // const innerResponse = response[0];
-      // const formattedComment = [
-      //   {
-      //     comment_id: innerResponse.comment_id,
-      //     user: {
-      //       user_id: innerResponse.user_id,
-      //       username: innerResponse.username,
-      //     },
-      //     body: innerResponse.body,
-      //     created_at: innerResponse.created_at,
-      //     level: innerResponse.level,
-      //     comment_num: innerResponse.comment_num,
-      //     likes: innerResponse.likes,
-      //     dislikes: innerResponse.dislikes,
-      //     max_child_comment_num: null,
-      //     is_deleted: innerResponse.is_deleted,
-      //     comments: [],
-      //   },
-      // ];
-      // return formattedComment;
+              .returningAll();
+          }
+        })
+        .with("insert_comment", (withQuery) =>
+          withQuery
+            .insertInto("comments")
+            .values(({ ref, selectFrom }) => ({
+              parent_id,
+              level,
+              user_id,
+              post_id,
+              body,
+              num_of_children: 0,
+              comment_num: selectFrom("comment_pagination").select((eb) => [
+                eb("num_of_children", "-", 1).as("comment_num"),
+              ]),
+            }))
+            .returningAll()
+        )
+        .selectFrom("insert_comment")
+        .leftJoin("profiles as users", (join) =>
+          join.onRef("users.user_id", "=", "insert_comment.user_id")
+        )
+        // .selectAll()
+        .select([
+          "comment_id",
+          "body",
+          "level",
+          "insert_comment.created_at",
+          "users.user_id",
+          "users.username",
+          "likes",
+          "dislikes",
+          "comment_num",
+          "is_deleted",
+          "num_of_children",
+        ])
+        .execute();
+
+      const innerResponse = response[0];
+      const formattedComment = [
+        {
+          comment_id: innerResponse.comment_id,
+          user: {
+            user_id: innerResponse.user_id,
+            username: innerResponse.username,
+          },
+          body: innerResponse.body,
+          created_at: innerResponse.created_at,
+          level: innerResponse.level,
+          comment_num: innerResponse.comment_num,
+          likes: innerResponse.likes,
+          dislikes: innerResponse.dislikes,
+          max_child_comment_num: null,
+          is_deleted: innerResponse.is_deleted,
+          num_of_children: innerResponse.num_of_children,
+          comments: [],
+        },
+      ];
+      return formattedComment;
     }),
   deleteComment: publicProcedure.input(deleteComment).mutation(async (req) => {
     const input = req.input;

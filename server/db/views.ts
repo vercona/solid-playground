@@ -27,4 +27,5 @@ export const comments_view = () => kyselyDb
     "dislikes",
     "is_deleted",
     "comment_num",
+    "num_of_children"
   ]);

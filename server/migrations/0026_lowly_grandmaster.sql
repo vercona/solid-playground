@@ -1,0 +1,1 @@
+ALTER TABLE "comments" RENAME COLUMN "num_of_replies" TO "num_of_children";

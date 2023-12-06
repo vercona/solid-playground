@@ -176,6 +176,41 @@
       "when": 1701831097742,
       "tag": "0024_furry_husk",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1701832816481,
+      "tag": "0025_lazy_living_mummy",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1701833026072,
+      "tag": "0026_lowly_grandmaster",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "5",
+      "when": 1701833040635,
+      "tag": "0027_slippery_morlocks",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "5",
+      "when": 1701833302962,
+      "tag": "0028_mushy_iron_fist",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "5",
+      "when": 1701836490187,
+      "tag": "0029_thankful_kree",
+      "breakpoints": true
     }
   ]
 }
