@@ -18,7 +18,7 @@ import { getPostAndComments, submitComment } from "../apiCalls/CommentSectionCal
 import Comment from "../components/Comment";
 import { errorPageUrl } from "../utils/constants";
 import { formatErrorUrl } from "../utils/utilFunctions";
-import { Comment as CommentType, PostAndComments, PathArray } from "../utils/interfaces";
+import { Comment as CommentType, PostAndComments, PathArray, ErrorType } from "../utils/interfaces";
 import ReplyCommentField from "../components/ReplyCommentField";
 
 function resourceStore<T, S>(watcher:ResourceSource<S>, fetcher:ResourceFetcher<S, T, unknown>, options={}) {
@@ -48,6 +48,10 @@ const Post = () => {
   const [commentText, setCommentText] = createSignal("");
   const [settings, setSettings] = createSignal({
     displayForm: false,
+    error: {
+      display: false,
+      errorMessage: "",
+    },
   });
 
 
@@ -134,7 +138,7 @@ const Post = () => {
           0,
           commentText()
         );
-        console.log("respnse", response);
+
         addComment([], response[0]);
         setSettings((currentSettings) => ({
           ...currentSettings,
@@ -142,7 +146,11 @@ const Post = () => {
         }));
       }
     } catch (err) {
-      console.log("submit err", err);
+      const formattedError = formatErrorUrl(err as ErrorType);
+      setSettings({
+        ...settings(),
+        error: { display: true, errorMessage: formattedError.errorMessage },
+      });
     }
   };
 
@@ -203,6 +211,9 @@ const Post = () => {
                 }
               />
             </Show>
+          </Show>
+          <Show when={settings().error.display}>
+            <div class="text-red-600">{settings().error.errorMessage}</div>
           </Show>
 
           <Show when={singlePost() && singlePost()?.comments}>

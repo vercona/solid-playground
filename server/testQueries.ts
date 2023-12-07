@@ -71,7 +71,7 @@ const fetchQueries = async () => {
     // });
 
     console.log("response", response);
-    console.log("response deep", response.comments[2].comments);
+    // console.log("response deep", response.comments[2].comments);
   } catch (err) {
     // console.log("error data", err.data);
     // console.log("error data deep", err.data.zodError.fieldErrors);

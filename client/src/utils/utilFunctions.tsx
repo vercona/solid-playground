@@ -24,7 +24,7 @@ export const formatErrorUrl = (errorObj: ErrorType) => {
     const isErrObjJson = isJson(errorObj.message);
     if (errorObj.data && errorObj.data.inputValidationError && isErrObjJson){
       const parsedErrorMessage = JSON.parse(errorObj.message)
-      errorMessage = parsedErrorMessage[0].message;
+      errorMessage = parsedErrorMessage[0].message + " Please try again!";
     }else if( typeof errorObj.message === "string"){
       errorMessage = errorObj.message;
     } else{

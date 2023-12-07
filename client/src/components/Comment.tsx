@@ -38,8 +38,9 @@ const Comment = (props: CommentProps) => {
     try{
       const response = await submitComment(
         "e274ca42-560c-49ef-95ab-c10511fb8412",
-        // post_id(),
-        "e0257a7a-8f56-4b72-beb3-85093faa9f10",
+        post_id(),
+        // "",
+        // "e0257a7a-8f56-4b72-beb3-85093faa9f10",
         comment().level + 1,
         commentText(),
         comment().comment_id
@@ -48,7 +49,7 @@ const Comment = (props: CommentProps) => {
       props.addComment(pathArr(), response[0]);
       setSettings((currentSettings) => ({...currentSettings, displayForm: false }));
     }catch(err){
-      console.log("submit err", err)
+      // console.log("err", err.data.httpStatus);
       const formattedError = formatErrorUrl(err as ErrorType);
       setSettings({
         ...settings(),
