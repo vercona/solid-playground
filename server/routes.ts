@@ -29,7 +29,7 @@ export const router = t.router;
 export const publicProcedure = t.procedure;
 
 interface GetComments extends KyselyDatabase {
-  c: KyselyDatabase["comments"];
+  c: KyselyDatabase["comments"] & { row_num: number };
   t: KyselyDatabase["comments"] & {
     user_id: string | null;
     username: string;
@@ -37,21 +37,19 @@ interface GetComments extends KyselyDatabase {
   };
 }
 
-const reusable = (qb: SelectQueryBuilder<GetComments, "c", {}>) =>
+const reusable = (isEntry: boolean) => (qb: SelectQueryBuilder<GetComments, "c", {}>) =>
   qb
     .leftJoin("profiles", "profiles.user_id", "c.user_id")
     .leftJoinLateral(
       (eb) =>
         eb
           .selectFrom("c as child_comments")
-          .select((eb) =>
-            eb.fn.max("comment_num").as("max_child_comment_num")
-          )
+          .select((eb) => eb.fn.max("comment_num").as("max_child_comment_num"))
           .whereRef("child_comments.parent_id", "=", "c.comment_id")
           .as("get_children"),
       (jb) => jb.onTrue()
     )
-    .select([
+    .select(({ fn, eb }) => [
       "profiles.user_id",
       "profiles.username",
 
@@ -66,7 +64,11 @@ const reusable = (qb: SelectQueryBuilder<GetComments, "c", {}>) =>
       "get_children.max_child_comment_num",
       "c.likes",
       "c.dislikes",
-      "c.num_of_children"
+      "c.num_of_children",
+      fn
+        .agg<number>("row_number")
+        .over((e) => e.partitionBy("c.parent_id").orderBy("c.created_at"))
+        .as("row_num"),
     ]);
 
 interface FlatComment {
@@ -83,6 +85,7 @@ interface FlatComment {
   dislikes: number;
   parent_id: string | null;
   num_of_children: number;
+  row_num: number;
 }
 
 const nestComments = (
@@ -125,6 +128,7 @@ interface Comments {
   likes: number;
   dislikes: number;
   num_of_children: number;
+  row_num: number;
   comments: Comments[];
 }
 
@@ -144,6 +148,7 @@ const CommentsSchema: z.ZodType<Comments> = z.lazy(() =>
     likes: z.number(),
     dislikes: z.number(),
     num_of_children: z.number(),
+    row_num: z.number(),
     comments: z.array(CommentsSchema),
   }).refine((comment) => {
     if(comment.is_deleted){
@@ -213,7 +218,7 @@ export const routes = router({
 
     const paginationQueries = (qb: SelectQueryBuilder<GetComments, "c", {}>) => {
       const baseQuery = qb
-        .$call(reusable)
+        .$call(reusable(true))
         .where("c.comment_num", ">=", beginCommentNum)
         .where("c.comment_num", "<", endCommentNum);
       
@@ -257,31 +262,35 @@ export const routes = router({
   }),
   getPostAndComments: publicProcedure
     .input(getAllCommentsInput)
-    .output(
-      z.object({
-        post: getPost,
-        comments: z.array(CommentsSchema),
-      })
-    )
+    // .output(
+    //   z.object({
+    //     post: getPost,
+    //     comments: z.array(CommentsSchema),
+    //   })
+    // )
     .query(async (req) => {
       const { post_id } = req.input;
       const getCommentsRes = await kyselyDb
         .withRecursive(
-          "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes, num_of_children)",
+          "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes, num_of_children, row_num)",
           (db: QueryCreator<GetComments>) =>
             db
               .with("c", comments_view)
               .selectFrom("c")
-              .$call(reusable)
+              .$call(reusable(true))
               .where("parent_id", "is", null)
               .where("post_id", "=", post_id)
+              // .where("row_num", "<", 3)
               // .where("comment_num", "<", 3)
-              .unionAll((db) =>
-                db
-                  .selectFrom("t")
-                  .innerJoin("c", "c.parent_id", "t.comment_id")
-                  .$call(reusable)
-                  .where("c.comment_num", "<", 10)
+              .unionAll(
+                (db) =>
+                  db
+                    .selectFrom("t")
+                    .innerJoin("c", "c.parent_id", "t.comment_id")
+                    .$call(reusable(false))
+                    .where(sql`row_num::integer` as any, "<", 3)
+                // .where("c.comment_num", "<", 2)
+                // .where("c.comment_num", ">", 2)
               )
         )
         .selectFrom("t")
@@ -289,6 +298,7 @@ export const routes = router({
         .orderBy("created_at")
         .execute();
 
+        console.log("getCommentsRes", getCommentsRes);
       const getPostsAndUsersRes = await kyselyDb
           .selectFrom("posts")
           .innerJoin("profiles", "posts.user_id", "profiles.user_id")
@@ -368,7 +378,6 @@ export const routes = router({
         .leftJoin("profiles as users", (join) =>
           join.onRef("users.user_id", "=", "insert_comment.user_id")
         )
-        // .selectAll()
         .select([
           "comment_id",
           "body",
