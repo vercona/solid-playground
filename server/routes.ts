@@ -280,21 +280,24 @@ export const routes = router({
               .$call(reusable(true))
               .where("parent_id", "is", null)
               .where("post_id", "=", post_id)
-              // .where("row_num", "<", 3)
-              // .where("comment_num", "<", 3)
               .unionAll(
                 (db) =>
                   db
                     .selectFrom("t")
                     .innerJoin("c", "c.parent_id", "t.comment_id")
                     .$call(reusable(false))
-                    .where(sql`row_num::integer` as any, "<", 3)
-                // .where("c.comment_num", "<", 2)
-                // .where("c.comment_num", ">", 2)
               )
         )
         .selectFrom("t")
         .selectAll()
+        .where((eb) => eb.or([
+          eb('level', '=', 0),
+          eb.and([
+            eb('level', '>', 0), 
+            // can add "greater than row N" for pagination start location
+            eb('row_num', '<=', 3),
+          ])
+        ]))
         .orderBy("created_at")
         .execute();
 
