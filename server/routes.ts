@@ -64,11 +64,11 @@ const reusable = (qb: SelectQueryBuilder<GetComments, "c", {}>) =>
       "get_children.max_child_comment_num",
       "c.likes",
       "c.dislikes",
-      "c.num_of_children"
-      // fn
-      //   .agg<number>("row_number")
-      //   .over((e) => e.partitionBy("c.parent_id").orderBy("c.comment_num"))
-      //   .as("row_num"),
+      "c.num_of_children",
+      fn
+        .agg<number>("row_number")
+        .over((e) => e.partitionBy("c.parent_id").orderBy("c.comment_num"))
+        .as("row_num"),
     ]);
 
 interface FlatComment {
@@ -85,7 +85,7 @@ interface FlatComment {
   dislikes: number;
   parent_id: string | null;
   num_of_children: number;
-  // row_num: number;
+  row_num: number;
 }
 
 const nestComments = (
@@ -128,7 +128,7 @@ interface Comments {
   likes: number;
   dislikes: number;
   num_of_children: number;
-  // row_num: number;
+  row_num: number;
   comments: Comments[];
 }
 
@@ -148,7 +148,7 @@ const CommentsSchema: z.ZodType<Comments> = z.lazy(() =>
     likes: z.number(),
     dislikes: z.number(),
     num_of_children: z.number(),
-    // row_num: z.number(),
+    row_num: z.number(),
     comments: z.array(CommentsSchema),
   }).refine((comment) => {
     if(comment.is_deleted){
@@ -214,13 +214,11 @@ export const routes = router({
     return response;
   }),
   getRepliedComments: publicProcedure.input(getRepliedComments).query(async (req) => {
-    const { post_id, parent_id, beginCommentNum, endCommentNum, levelLimit } = req.input;
+    const { post_id, parent_id, startUuidKey, beginCommentNum, endCommentNum, levelLimit } = req.input;
 
     const paginationQueries = (qb: SelectQueryBuilder<GetComments, "c", {}>) => {
       const baseQuery = qb
         .$call(reusable)
-        .where("c.comment_num", ">=", beginCommentNum)
-        .where("c.comment_num", "<", endCommentNum);
       
       if(levelLimit){
         return baseQuery.where("c.level", "<=", levelLimit)
@@ -231,7 +229,7 @@ export const routes = router({
 
     const getCommentsRes = await kyselyDb
       .withRecursive(
-        "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes, num_of_children)",
+        "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes, num_of_children, row_num)",
         (db: QueryCreator<GetComments>) =>
           db
             .with("c", comments_view)
@@ -248,6 +246,12 @@ export const routes = router({
       )
       .selectFrom("t")
       .selectAll()
+      .where((eb) =>
+        eb.and([
+          eb("comment_id", "<=", startUuidKey),
+          eb("row_num", "<=", endCommentNum),
+        ])
+      )
       .orderBy("created_at")
       .execute();
 
@@ -258,7 +262,7 @@ export const routes = router({
       });
     }
 
-    return getCommentsRes;
+    return nestComments(getCommentsRes, parent_id);
   }),
   getPostAndComments: publicProcedure
     .input(getAllCommentsInput)
@@ -272,7 +276,7 @@ export const routes = router({
       const { post_id } = req.input;
       const getCommentsRes = await kyselyDb
         .withRecursive(
-          "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes, num_of_children)",
+          "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes, num_of_children, row_num)",
           (db: QueryCreator<GetComments>) =>
             db
               .with("c", comments_view)
@@ -289,12 +293,20 @@ export const routes = router({
                     .innerJoin("c", "c.parent_id", "t.comment_id")
                     .$call(reusable)
                     // .where(sql`row_num::integer` as any, "<", 3)
-                    .where("c.comment_num", "<", 10)
+                    // .where("c.comment_num", "<", 10)
                     // .where("c.comment_num", ">", 2)
               )
         )
         .selectFrom("t")
         .selectAll()
+        .where((eb) => eb.or([
+          eb('level', '=', 0),
+          eb.and([
+            eb('level', '>', 0), 
+            // can add "greater than row N" for pagination start location
+            eb('row_num', '<=', 4),
+          ])
+        ]))
         .orderBy("created_at")
         .execute();
 

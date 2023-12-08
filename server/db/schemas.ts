@@ -109,7 +109,14 @@ export const deleteComment = createSelectSchema(comments).pick({ comment_id: tru
 
 export const getPostInput = createSelectSchema(posts).pick({ post_id: true });
 export const getAllCommentsInput = createSelectSchema(comments).pick({ post_id: true });
-export const getRepliedComments = createSelectSchema(comments).pick({ post_id: true, parent_id: true }).extend({ beginCommentNum: z.number(), endCommentNum: z.number(), levelLimit: z.number().optional() });
+export const getRepliedComments = createSelectSchema(comments)
+  .pick({ post_id: true, parent_id: true })
+  .extend({
+    beginCommentNum: z.number(),
+    endCommentNum: z.number(),
+    levelLimit: z.number().optional(),
+    startUuidKey: z.string(),
+  });
 
 const userSchema = createSelectSchema(users)
   .omit({ created_at: true });
