@@ -214,7 +214,7 @@ export const routes = router({
     return response;
   }),
   getRepliedComments: publicProcedure.input(getRepliedComments).query(async (req) => {
-    const { post_id, parent_id, startUuidKey, beginCommentNum, endCommentNum, levelLimit } = req.input;
+    const { post_id, parent_id, beginCommentNum, endCommentNum, startLevel, levelLimit } = req.input;
 
     const paginationQueries = (qb: SelectQueryBuilder<GetComments, "c", {}>) => {
       const baseQuery = qb
@@ -246,11 +246,18 @@ export const routes = router({
       )
       .selectFrom("t")
       .selectAll()
-      .where((eb) =>
-        eb.and([
-          eb("comment_id", "<=", startUuidKey),
-          eb("row_num", "<=", endCommentNum),
-        ])
+      .where(
+        (eb) =>
+          eb.or([
+            eb.and([
+              eb("row_num", ">", beginCommentNum),
+              eb("row_num", "<=", endCommentNum),
+            ]),
+            eb.and([
+              eb("level", ">", startLevel),
+              eb("row_num", "<=", endCommentNum),
+            ]),
+          ])
       )
       .orderBy("created_at")
       .execute();

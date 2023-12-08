@@ -115,7 +115,7 @@ export const getRepliedComments = createSelectSchema(comments)
     beginCommentNum: z.number(),
     endCommentNum: z.number(),
     levelLimit: z.number().optional(),
-    startUuidKey: z.string(),
+    startLevel: z.number()
   });
 
 const userSchema = createSelectSchema(users)
