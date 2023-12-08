@@ -254,7 +254,7 @@ export const routes = router({
               eb("row_num", "<=", endCommentNum),
             ]),
             eb.and([
-              eb("level", ">", startLevel),
+              eb("t.level", "<", eb.selectFrom('t').select( ({fn})=>fn.min('t.level').as('anchor_level') )),
               eb("row_num", "<=", endCommentNum),
             ]),
           ])
