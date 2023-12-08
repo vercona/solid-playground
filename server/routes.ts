@@ -1,3 +1,4 @@
+//@ts-nocheck
 // import { FastifyInstance } from "fastify";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { sql, SelectQueryBuilder, QueryCreator } from "kysely";
@@ -29,15 +30,16 @@ export const router = t.router;
 export const publicProcedure = t.procedure;
 
 interface GetComments extends KyselyDatabase {
-  c: KyselyDatabase["comments"] & { row_num: number };
+  c: KyselyDatabase["comments"] & { row_num: number, depth: number };
   t: KyselyDatabase["comments"] & {
     user_id: string | null;
     username: string;
     max_child_comment_num: number | null;
+    depth: number
   };
 }
 
-const reusable = (qb: SelectQueryBuilder<GetComments, "c", {}>) =>
+const reusable = (isEntry:boolean=false) => (qb: SelectQueryBuilder<GetComments, "c", {}>) =>
   qb
     .leftJoin("profiles", "profiles.user_id", "c.user_id")
     .leftJoinLateral(
@@ -69,6 +71,13 @@ const reusable = (qb: SelectQueryBuilder<GetComments, "c", {}>) =>
         .agg<number>("row_number")
         .over((e) => e.partitionBy("c.parent_id").orderBy("c.comment_num"))
         .as("row_num"),
+
+      //'c.depth'
+      isEntry 
+          ? sql`0 as depth` //eb.val(0).as("depth") 
+          
+          : eb("t.depth", "+", 1).as('depth') // eb.val(1).as("depth")
+
     ]);
 
 interface FlatComment {
@@ -214,34 +223,24 @@ export const routes = router({
     return response;
   }),
   getRepliedComments: publicProcedure.input(getRepliedComments).query(async (req) => {
-    const { post_id, parent_id, beginCommentNum, endCommentNum, startLevel, levelLimit } = req.input;
-
-    const paginationQueries = (qb: SelectQueryBuilder<GetComments, "c", {}>) => {
-      const baseQuery = qb
-        .$call(reusable)
-      
-      if(levelLimit){
-        return baseQuery.where("c.level", "<=", levelLimit)
-      }
-
-      return baseQuery;
-    }
+    const { post_id, parent_id, beginCommentNum, endCommentNum, levelLimit } = req.input;
 
     const getCommentsRes = await kyselyDb
       .withRecursive(
-        "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes, num_of_children, row_num)",
+        "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes, num_of_children, row_num, depth)",
         (db: QueryCreator<GetComments>) =>
           db
             .with("c", comments_view)
             .selectFrom("c")
-            .$call(paginationQueries)
+            .$call(reusable(true))
             .where("parent_id", "=", parent_id)
             .where("post_id", "=", post_id)
             .unionAll((db) =>
               db
                 .selectFrom("t")
                 .innerJoin("c", "c.parent_id", "t.comment_id")
-                .$call(paginationQueries)
+                .$call(reusable())
+                .where('depth', '<=', levelLimit)
             )
       )
       .selectFrom("t")
@@ -288,7 +287,7 @@ export const routes = router({
             db
               .with("c", comments_view)
               .selectFrom("c")
-              .$call(reusable)
+              .$call(reusable(true))
               .where("parent_id", "is", null)
               .where("post_id", "=", post_id)
               // .where("row_num", "<", 3)
@@ -298,7 +297,7 @@ export const routes = router({
                   db
                     .selectFrom("t")
                     .innerJoin("c", "c.parent_id", "t.comment_id")
-                    .$call(reusable)
+                    .$call(reusable())
                     // .where(sql`row_num::integer` as any, "<", 3)
                     // .where("c.comment_num", "<", 10)
                     // .where("c.comment_num", ">", 2)

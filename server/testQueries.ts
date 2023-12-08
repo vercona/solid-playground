@@ -68,7 +68,7 @@ const fetchQueries = async () => {
       beginCommentNum: 1,
       endCommentNum: 3,
       startLevel: 1,
-      // levelLimit: 1
+      levelLimit: 3
     });
 
     console.log("response", response);
