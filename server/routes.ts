@@ -3,7 +3,7 @@ import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
 import { sql, SelectQueryBuilder, QueryCreator } from "kysely";
 import { eq, isNull, sql as rawDrizzleSqlQuery } from "drizzle-orm";
 import { TRPCError, initTRPC } from "@trpc/server";
-import { ZodError, z } from "zod";
+import { ZodError, number, z } from "zod";
 import { db } from "./db";
 import { comments, commentsTableName, createCommentInput, createPostInput, createUserInput, deleteComment, getAllCommentsInput, getRepliedComments, getPost, getPostInput, posts, postsTableName, users, usersTableName } from "./db/schemas";
 import { kyselyDb, KyselyDatabase } from "./db/kyselyDb";
@@ -29,15 +29,16 @@ export const router = t.router;
 export const publicProcedure = t.procedure;
 
 interface GetComments extends KyselyDatabase {
-  c: KyselyDatabase["comments"] & { row_num: number };
+  c: KyselyDatabase["comments"] & { row_num: number, anchor_depth: number; };
   t: KyselyDatabase["comments"] & {
     user_id: string | null;
     username: string;
     max_child_comment_num: number | null;
+    anchor_depth: number;
   };
 }
 
-const reusable = (qb: SelectQueryBuilder<GetComments, "c", {}>) =>
+const reusable = (isEntry:boolean=false) => (qb: SelectQueryBuilder<GetComments, "c"|"t", {}>) =>
   qb
     .leftJoin("profiles", "profiles.user_id", "c.user_id")
     .leftJoinLateral(
@@ -69,6 +70,8 @@ const reusable = (qb: SelectQueryBuilder<GetComments, "c", {}>) =>
         .agg<number>("row_number")
         .over((e) => e.partitionBy("c.parent_id").orderBy("c.comment_num"))
         .as("row_num"),
+
+      eb.ref(isEntry ? "c.level" : "t.level").as("anchor_depth"),
     ]);
 
 interface FlatComment {
@@ -78,6 +81,7 @@ interface FlatComment {
   body: string | null;
   created_at: Date;
   level: number;
+  anchor_depth: number;
   is_deleted: boolean;
   comment_num: number;
   max_child_comment_num: number | null;
@@ -216,9 +220,10 @@ export const routes = router({
   getRepliedComments: publicProcedure.input(getRepliedComments).query(async (req) => {
     const { post_id, parent_id, beginCommentNum, endCommentNum, startLevel, levelLimit } = req.input;
 
-    const paginationQueries = (qb: SelectQueryBuilder<GetComments, "c", {}>) => {
+    const paginationQueries = (v:boolean=false) => (qb: SelectQueryBuilder<GetComments, "c", {}>) => {
       const baseQuery = qb
-        .$call(reusable)
+        //@ts-expect-error
+        .$call(reusable(v))
       
       if(levelLimit){
         return baseQuery.where("c.level", "<=", levelLimit)
@@ -233,15 +238,19 @@ export const routes = router({
         (db: QueryCreator<GetComments>) =>
           db
             .with("c", comments_view)
+            .with( // get parent here
+              "parent_comment", 
+              (qb) => qb.selectFrom("c").selectAll().where("comment_id", "=", parent_id)
+            ) 
             .selectFrom("c")
-            .$call(paginationQueries)
+            .$call(paginationQueries(true))
             .where("parent_id", "=", parent_id)
             .where("post_id", "=", post_id)
             .unionAll((db) =>
               db
                 .selectFrom("t")
                 .innerJoin("c", "c.parent_id", "t.comment_id")
-                .$call(paginationQueries)
+                .$call(paginationQueries())
             )
       )
       .selectFrom("t")
@@ -254,7 +263,8 @@ export const routes = router({
               eb("row_num", "<=", endCommentNum),
             ]),
             eb.and([
-              eb("level", ">", startLevel),
+              //eb("level", ">", eb.selectFrom("comments").select("level").where("comment_id", "=", parent_id)), // <-- use level here
+              eb("t.level", ">", eb.ref("t.anchor_depth")),
               eb("row_num", "<=", endCommentNum),
             ]),
           ])
@@ -288,7 +298,8 @@ export const routes = router({
             db
               .with("c", comments_view)
               .selectFrom("c")
-              .$call(reusable)
+              //@ts-expect-error
+              .$call(reusable(true))
               .where("parent_id", "is", null)
               .where("post_id", "=", post_id)
               // .where("row_num", "<", 3)
@@ -298,7 +309,7 @@ export const routes = router({
                   db
                     .selectFrom("t")
                     .innerJoin("c", "c.parent_id", "t.comment_id")
-                    .$call(reusable)
+                    .$call(reusable())
                     // .where(sql`row_num::integer` as any, "<", 3)
                     // .where("c.comment_num", "<", 10)
                     // .where("c.comment_num", ">", 2)
