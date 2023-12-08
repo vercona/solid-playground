@@ -65,15 +65,15 @@ const fetchQueries = async () => {
       // parent_id: "c0395394-365c-4f1b-b079-2efd01cb751c",
       parent_id: "1259e113-6412-4b95-84b0-b13e6453eaaa",
       // startUuidKey: "c54263c7-b977-4be4-be5c-0f0b5324c3fb",
-      beginCommentNum: 1,
-      endCommentNum: 3,
-      startLevel: 1,
-      // levelLimit: 1
+      begin_comment_num: 0,
+      end_comment_num: 3,
+      start_level: 1,
+      // query_depth: 0
     });
 
     console.log("response", response);
     // console.log("response deep", response.comments[2].comments);
-    console.log("response deep", response[0].comments);
+    // console.log("response deep", response[1].comments);
   } catch (err) {
     // console.log("error data", err.data);
     // console.log("error data deep", err.data.zodError.fieldErrors);

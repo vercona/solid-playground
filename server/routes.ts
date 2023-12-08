@@ -214,14 +214,13 @@ export const routes = router({
     return response;
   }),
   getRepliedComments: publicProcedure.input(getRepliedComments).query(async (req) => {
-    const { post_id, parent_id, beginCommentNum, endCommentNum, startLevel, levelLimit } = req.input;
+    const { post_id, parent_id, begin_comment_num, end_comment_num, start_level, query_depth } = req.input;
 
     const paginationQueries = (qb: SelectQueryBuilder<GetComments, "c", {}>) => {
       const baseQuery = qb
         .$call(reusable)
-      
-      if(levelLimit){
-        return baseQuery.where("c.level", "<=", levelLimit)
+      if(query_depth || query_depth === 0){
+        return baseQuery.where("c.level", "<=", start_level + query_depth)
       }
 
       return baseQuery;
@@ -246,18 +245,17 @@ export const routes = router({
       )
       .selectFrom("t")
       .selectAll()
-      .where(
-        (eb) =>
-          eb.or([
-            eb.and([
-              eb("row_num", ">", beginCommentNum),
-              eb("row_num", "<=", endCommentNum),
-            ]),
-            eb.and([
-              eb("level", ">", startLevel),
-              eb("row_num", "<=", endCommentNum),
-            ]),
-          ])
+      .where((eb) =>
+        eb.or([
+          eb.and([
+            eb("row_num", ">", begin_comment_num),
+            eb("row_num", "<=", end_comment_num),
+          ]),
+          eb.and([
+            eb("level", ">", start_level),
+            eb("row_num", "<=", end_comment_num),
+          ]),
+        ])
       )
       .orderBy("created_at")
       .execute();

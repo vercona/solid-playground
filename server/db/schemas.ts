@@ -112,10 +112,10 @@ export const getAllCommentsInput = createSelectSchema(comments).pick({ post_id: 
 export const getRepliedComments = createSelectSchema(comments)
   .pick({ post_id: true, parent_id: true })
   .extend({
-    beginCommentNum: z.number(),
-    endCommentNum: z.number(),
-    levelLimit: z.number().optional(),
-    startLevel: z.number()
+    begin_comment_num: z.number(),
+    end_comment_num: z.number(),
+    query_depth: z.number().optional(),
+    start_level: z.number(),
   });
 
 const userSchema = createSelectSchema(users)
