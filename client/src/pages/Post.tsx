@@ -54,63 +54,16 @@ const Post = () => {
     },
   });
 
-
-  // const [
-  //   singlePost,
-  //   {mutate}
-  // ] = createResource<PostAndComments, string>(
-  //   params.postId,
-  //   getPostAndComments,
-  //   {storage: createDeepSignal}
-  // );
-
-  let [singlePost, { mutate }] = resourceStore<PostAndComments, string>(
+  const [singlePost, { mutate }] = resourceStore<PostAndComments, string>(
     params.postId,
     getPostAndComments
   );
 
-  const addComment = (pathArr: PathArray[], value: CommentType) => {
-    // if (singlePost() && singlePost()?.comments) {
-    //   const postCopy = JSON.parse(JSON.stringify(singlePost()!.comments)) as CommentType[];
-    //   // console.log("postCopy before", postCopy)
-    //   let changingObj: CommentType[] | CommentType = postCopy;
-
-    //   // console.log("changingObj", changingObj);
-    //   for (let i = 0; i <= pathArr.length - 1; i++) {
-    //     var elem = pathArr[i];
-    //     // if(i === 0 && elem === 'comments'){
-    //     //   const newObj = changingObj['comments'] as CommentType[];
-    //     //   changingObj = changingObj[elem];
-    //     // }
-    //     if (typeof elem === "number" && Array.isArray(changingObj)) {
-    //       changingObj = changingObj[elem];
-    //     } else if (
-    //       elem === "comments" &&
-    //       "comments" in changingObj
-    //     ) {
-    //       changingObj = changingObj[elem];
-    //     }
-    //     // if (!changingObj[elem]) changingObj[elem] = {};
-    //     // changingObj = changingObj[elem];
-    //   }
-
-    //   // console.log("pathArr[pathArr.length - 2]", pathArr[pathArr.length - 2]);
-    //   // console.log("Array.isArray(changingObj)", Array.isArray(changingObj));
-    //   if (Array.isArray(changingObj)) {
-    //     changingObj.push(value);
-    //     mutate((currentPost) => ({ ...currentPost!, comments: postCopy}));
-    //   }
-      
-    //   // console.log("path", pathArr);
-    //   // console.log("value", value);
-    //   // console.log("changeObj", changingObj);
-    //   // console.log("postCopy", postCopy);
-    // }
-    // changingObj[pathArr[pathArr.length - 1]] = value;
+  const addComment = (pathArr: PathArray[], value: CommentType[]) => {
     if (singlePost() && singlePost()?.comments) {
       mutate(0, "comments", ...(pathArr as []), (existing: CommentType[]) => [
         ...existing,
-        value,
+        ...value,
       ]);
     }
   };
@@ -139,7 +92,7 @@ const Post = () => {
           commentText()
         );
 
-        addComment([], response[0]);
+        addComment([], response);
         setSettings((currentSettings) => ({
           ...currentSettings,
           displayForm: false,

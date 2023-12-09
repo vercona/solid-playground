@@ -97,7 +97,7 @@ const nestComments = (
   );
 
   return comments.map((comment) => {
-    const { user_id, username, ...formattedComment } = comment;
+    const { user_id, username, row_num, ...formattedComment } = comment;
 
     let childComments =
       comment.max_child_comment_num === null
@@ -107,6 +107,7 @@ const nestComments = (
     return {
       ...formattedComment,
       user: { user_id, username },
+      row_num: Number(row_num),
       comments: childComments,
     };
   });
@@ -214,7 +215,7 @@ export const routes = router({
     return response;
   }),
   getRepliedComments: publicProcedure.input(getRepliedComments).query(async (req) => {
-    const { post_id, parent_id, begin_comment_num, end_comment_num, start_level, query_depth } = req.input;
+    const { post_id, parent_id, begin_comment_num, query_num_limit, start_level, query_depth } = req.input;
 
     const paginationQueries = (qb: SelectQueryBuilder<GetComments, "c", {}>) => {
       const baseQuery = qb
@@ -249,11 +250,11 @@ export const routes = router({
         eb.or([
           eb.and([
             eb("row_num", ">", begin_comment_num),
-            eb("row_num", "<=", end_comment_num),
+            eb("row_num", "<=", begin_comment_num + query_num_limit),
           ]),
           eb.and([
             eb("level", ">", start_level),
-            eb("row_num", "<=", end_comment_num),
+            eb("row_num", "<=", begin_comment_num + query_num_limit),
           ]),
         ])
       )
@@ -278,7 +279,7 @@ export const routes = router({
       })
     )
     .query(async (req) => {
-      const { post_id } = req.input;
+      const { post_id, limitChildRowNum, limitLevel } = req.input;
       const getCommentsRes = await kyselyDb
         .withRecursive(
           "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes, num_of_children, row_num)",
@@ -290,28 +291,32 @@ export const routes = router({
               .where("parent_id", "is", null)
               .where("post_id", "=", post_id)
               // .where("row_num", "<", 3)
-              .where("comment_num", "<", 10)
+              // .where("comment_num", "<", 10)
               .unionAll(
                 (db) =>
                   db
                     .selectFrom("t")
                     .innerJoin("c", "c.parent_id", "t.comment_id")
                     .$call(reusable)
-                    // .where(sql`row_num::integer` as any, "<", 3)
-                    // .where("c.comment_num", "<", 10)
-                    // .where("c.comment_num", ">", 2)
+                // .where(sql`row_num::integer` as any, "<", 3)
+                // .where("c.comment_num", "<", 10)
+                // .where("c.comment_num", ">", 2)
               )
         )
         .selectFrom("t")
         .selectAll()
-        .where((eb) => eb.or([
-          eb('level', '=', 0),
-          eb.and([
-            eb('level', '>', 0), 
-            // can add "greater than row N" for pagination start location
-            eb('row_num', '<=', 4),
+        .where((eb) =>
+          eb.or([
+            eb("level", "=", 0),
+            eb.and([
+              eb("level", ">", 0),
+              eb("level", "<=", limitLevel),
+              // eb("level", "<=", 1),
+              // can add "greater than row N" for pagination start location
+              eb("row_num", "<=", limitChildRowNum),
+            ]),
           ])
-        ]))
+        )
         .orderBy("created_at")
         .execute();
 
@@ -405,7 +410,7 @@ export const routes = router({
           "dislikes",
           "comment_num",
           "is_deleted",
-          "num_of_children",
+          "num_of_children"
         ])
         .execute();
 
@@ -427,6 +432,7 @@ export const routes = router({
           max_child_comment_num: null,
           is_deleted: innerResponse.is_deleted,
           num_of_children: innerResponse.num_of_children,
+          row_num: -1,
           comments: [],
         },
       ];

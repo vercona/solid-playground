@@ -108,13 +108,13 @@ export const deleteComment = createSelectSchema(comments).pick({ comment_id: tru
 
 
 export const getPostInput = createSelectSchema(posts).pick({ post_id: true });
-export const getAllCommentsInput = createSelectSchema(comments).pick({ post_id: true });
+export const getAllCommentsInput = createSelectSchema(comments).pick({ post_id: true }).extend({ limitChildRowNum: z.number(), limitLevel: z.number() });
 export const getRepliedComments = createSelectSchema(comments)
   .pick({ post_id: true, parent_id: true })
   .extend({
     begin_comment_num: z.number(),
-    end_comment_num: z.number(),
-    query_depth: z.number().optional(),
+    query_num_limit: z.number(),
+    query_depth: z.number().nullable(),
     start_level: z.number(),
   });
 

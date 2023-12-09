@@ -1,11 +1,16 @@
 import { trpc } from "../utils/api";
 
-export const getPostAndComments = async (post_id: string) => {
-    const response = await trpc.getPostAndComments.query({
-      post_id,
-    });
+export const getPostAndComments = async (
+  post_id: string,
+  // limitChildRowNum: number
+) => {
+  const response = await trpc.getPostAndComments.query({
+    post_id,
+    limitChildRowNum: 4,
+    limitLevel: 1
+  });
 
-    return response;
+  return response;
 };
 
 export const getPost = async (post_id: string) => {
@@ -21,4 +26,22 @@ export const submitComment = async (user_id: string, post_id: string, level: num
 
 export const deleteComment = async (comment_id: string) => {
   return trpc.deleteComment.mutate({ comment_id });
+};
+
+export const getAdditionalComments = async (
+  post_id: string,
+  parent_id: string,
+  begin_comment_num: number,
+  query_num_limit: number,
+  start_level: number,
+  query_depth: number | null = null
+) => {
+  return trpc.getRepliedComments.query({
+    post_id,
+    parent_id,
+    begin_comment_num,
+    query_num_limit,
+    start_level,
+    query_depth,
+  });
 };

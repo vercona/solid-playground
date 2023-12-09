@@ -1,7 +1,7 @@
 import { For, Show, createSignal, createEffect } from "solid-js";
 import { destructure } from "@solid-primitives/destructure";
 import { calcTimeDifference, formatErrorUrl, getSentTimeMessage } from "../utils/utilFunctions";
-import { deleteComment, submitComment } from "../apiCalls/CommentSectionCalls";
+import { deleteComment, getAdditionalComments, submitComment } from "../apiCalls/CommentSectionCalls";
 import type { Comment as CommentType, ErrorType, PathArray } from "../utils/interfaces";
 import ReplyCommentField from "./ReplyCommentField";
 
@@ -22,7 +22,9 @@ const Comment = (props: CommentProps) => {
   const [settings, setSettings] = createSignal({
     isExpanded: false,
     displayForm: false,
+    isLoading: false,
     error: {
+      type: '',
       display: false,
       errorMessage: ''
     }
@@ -46,14 +48,14 @@ const Comment = (props: CommentProps) => {
         comment().comment_id
         // "e0257a7a-8f56-4b72-beb3-85093faa9f10"
       );
-      props.addComment(pathArr(), response[0]);
+      props.addComment(pathArr(), response);
       setSettings((currentSettings) => ({...currentSettings, displayForm: false }));
     }catch(err){
       // console.log("err", err.data.httpStatus);
       const formattedError = formatErrorUrl(err as ErrorType);
       setSettings({
         ...settings(),
-        error: { display: true, errorMessage: formattedError.errorMessage },
+        error: { display: true, errorMessage: formattedError.errorMessage, type: 'submission' },
       });
     }
   };
@@ -67,23 +69,57 @@ const Comment = (props: CommentProps) => {
     try{
       if (typeof index === 'number'){
         await deleteComment(comment().comment_id);
-        // await deleteComment("e0257a7a-8f56-4b72-beb3-85093faa9f10");
-        // await deleteComment("");
         props.deleteCommentFromStore(pathArr(), index);
       }
     }catch(err){
       // console.log("delete err", err)
       const formattedError = formatErrorUrl(err as ErrorType);
-      setSettings({...settings(), error: {display: true, errorMessage: formattedError.errorMessage}})
+      setSettings({...settings(), error: {display: true, errorMessage: formattedError.errorMessage, type: 'deletion'}})
       console.log("formattedError", formattedError);
     }
   };
+
+  const handleLoadMoreComments = async () => {
+    setSettings((currentSettings) => ({
+      ...currentSettings,
+      isLoading: true,
+    }));
+    try{
+      const response = await getAdditionalComments(post_id(), comment().comment_id, comment().comments.length, 4, comment().level + 1);
+      props.addComment(pathArr(), response);
+      setSettings((currentSettings) => ({
+        ...currentSettings,
+        isLoading: false,
+      }));
+    }catch(err){
+      const formattedError = formatErrorUrl(err as ErrorType);
+      setSettings((currentSettings) => ({
+        ...currentSettings,
+        isLoading: false,
+        error: {
+          display: true,
+          errorMessage: formattedError.errorMessage,
+          type: "pagination",
+        },
+      }));
+    }
+  }
+
+  const handleExpand = async () => {
+    setSettings((currentSettings) => ({
+      ...currentSettings,
+      isExpanded: !currentSettings.isExpanded
+    }));
+    if(comment().comments.length === 0){
+      await handleLoadMoreComments();
+    }
+  }
 
   // createEffect(() => {
   //   console.log("comment().is_deleted", comment().is_deleted);
   // });
 
-  console.log("this comment", comment())
+  // console.log("this comment", comment())
   return (
     <li class="py-5">
       <div class="text-xl">
@@ -134,18 +170,17 @@ const Comment = (props: CommentProps) => {
           }
         />
       </Show>
-      <Show when={settings().error.display}>
+      <Show
+        when={
+          settings().error.display &&
+          (settings().error.type === "submission" ||
+            settings().error.type === "deletion")
+        }
+      >
         <div class="text-red-600">{settings().error.errorMessage}</div>
       </Show>
-      <Show when={comment().comments.length !== 0}>
-        <button
-          onClick={() =>
-            setSettings((currentSettings) => ({
-              ...currentSettings,
-              isExpanded: !currentSettings.isExpanded,
-            }))
-          }
-        >
+      <Show when={comment().num_of_children}>
+        <button onClick={handleExpand}>
           {settings().isExpanded ? "-" : "+"}
         </button>
       </Show>
@@ -164,6 +199,27 @@ const Comment = (props: CommentProps) => {
             )}
           </For>
         </ul>
+        <Show
+          when={
+            comment().comments.length < comment().num_of_children &&
+            !settings().isLoading
+          }
+        >
+          <div class="ml-5">
+            <button onClick={handleLoadMoreComments}>Load more comments</button>
+          </div>
+        </Show>
+        <Show when={settings().isLoading}>
+          <div>Loading...</div>
+        </Show>
+        <Show
+          when={
+            settings().error.display &&
+            settings().error.type === "pagination"
+          }
+        >
+          <div class="text-red-600">{settings().error.errorMessage}</div>
+        </Show>
       </Show>
     </li>
   );
