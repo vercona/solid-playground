@@ -52,24 +52,25 @@ const fetchQueries = async () => {
     //   // body: "First level comment with Baam",
     // });
 
-    const response = await trpc.getPostAndComments.query({
-      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
-    });
+    // const response = await trpc.getPostAndComments.query({
+    //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+    // });
 
     // const response = await trpc.deleteComment.mutate({
     //   comment_id: "9f1b96dc-fce8-4751-ac9a-ab06c966a820",
     // });
 
-    // const response = await trpc.getRepliedComments.query({
-    //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
-    //   // parent_id: "c0395394-365c-4f1b-b079-2efd01cb751c",
-    //   parent_id: "1259e113-6412-4b95-84b0-b13e6453eaaa",
-    //   // startUuidKey: "c54263c7-b977-4be4-be5c-0f0b5324c3fb",
-    //   begin_comment_num: 0,
-    //   end_comment_num: 3,
-    //   start_level: 1,
-    //   // query_depth: 0
-    // });
+    const response = await trpc.getRepliedComments.query({
+      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+      // parent_id: "c0395394-365c-4f1b-b079-2efd01cb751c",
+      // parent_id: "1259e113-6412-4b95-84b0-b13e6453eaaa",
+      parent_id: null,
+      // startUuidKey: "c54263c7-b977-4be4-be5c-0f0b5324c3fb",
+      begin_comment_num: 0,
+      query_num_limit: 3,
+      start_level: 0,
+      query_depth: null
+    });
 
     console.log("response", response);
     // console.log("response deep", response.comments[2].comments);

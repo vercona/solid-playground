@@ -217,16 +217,23 @@ export const routes = router({
   getRepliedComments: publicProcedure.input(getRepliedComments).query(async (req) => {
     const { post_id, parent_id, begin_comment_num, query_num_limit, start_level, query_depth } = req.input;
 
-    const paginationQueries = (qb: SelectQueryBuilder<GetComments, "c", {}>) => {
-      const baseQuery = qb
+    const paginationQueries = (addParentIdCondition: boolean) => (qb: SelectQueryBuilder<GetComments, "c", {}>) => {
+      let baseQuery = qb
         .$call(reusable)
       if(query_depth || query_depth === 0){
-        return baseQuery.where("c.level", "<=", start_level + query_depth)
+        baseQuery = baseQuery.where("c.level", "<=", start_level + query_depth)
       }
-
+      if(addParentIdCondition){
+        if(parent_id){
+          baseQuery = baseQuery.where("parent_id", "=", parent_id)
+        }else{
+          baseQuery = baseQuery.where("parent_id", "is", parent_id);
+        }
+      }
       return baseQuery;
     }
 
+    console.log("parent_id", parent_id)
     const getCommentsRes = await kyselyDb
       .withRecursive(
         "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes, num_of_children, row_num)",
@@ -234,14 +241,13 @@ export const routes = router({
           db
             .with("c", comments_view)
             .selectFrom("c")
-            .$call(paginationQueries)
-            .where("parent_id", "=", parent_id)
+            .$call(paginationQueries(true))
             .where("post_id", "=", post_id)
             .unionAll((db) =>
               db
                 .selectFrom("t")
                 .innerJoin("c", "c.parent_id", "t.comment_id")
-                .$call(paginationQueries)
+                .$call(paginationQueries(false))
             )
       )
       .selectFrom("t")
@@ -261,6 +267,7 @@ export const routes = router({
       .orderBy("created_at")
       .execute();
 
+      console.log("getCommentsRes", getCommentsRes);
     if (getCommentsRes.length === 0) {
       throw new TRPCError({
         code: "NOT_FOUND",
@@ -291,7 +298,7 @@ export const routes = router({
               .where("parent_id", "is", null)
               .where("post_id", "=", post_id)
               // .where("row_num", "<", 3)
-              // .where("comment_num", "<", 10)
+              // .where("comment_num", "<", 2)
               .unionAll(
                 (db) =>
                   db
@@ -307,7 +314,10 @@ export const routes = router({
         .selectAll()
         .where((eb) =>
           eb.or([
-            eb("level", "=", 0),
+            eb.and([
+              eb("level", "=", 0),
+              // eb("row_num", "<=", 2),
+            ]),
             eb.and([
               eb("level", ">", 0),
               eb("level", "<=", limitLevel),

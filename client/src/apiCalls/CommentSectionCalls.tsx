@@ -30,7 +30,7 @@ export const deleteComment = async (comment_id: string) => {
 
 export const getAdditionalComments = async (
   post_id: string,
-  parent_id: string,
+  parent_id: string | null,
   begin_comment_num: number,
   query_num_limit: number,
   start_level: number,

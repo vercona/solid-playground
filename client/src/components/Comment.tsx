@@ -1,17 +1,29 @@
 import { For, Show, createSignal, createEffect } from "solid-js";
 import { destructure } from "@solid-primitives/destructure";
 import { calcTimeDifference, formatErrorUrl, getSentTimeMessage } from "../utils/utilFunctions";
-import { deleteComment, getAdditionalComments, submitComment } from "../apiCalls/CommentSectionCalls";
+import { deleteComment, submitComment } from "../apiCalls/CommentSectionCalls";
 import type { Comment as CommentType, ErrorType, PathArray } from "../utils/interfaces";
 import ReplyCommentField from "./ReplyCommentField";
+import ChildComments from "./ChildComments";
 
 interface CommentProps {
   comment: CommentType;
   post_id: string;
   pathArr: PathArray[];
-  addComment: (path: PathArray[], value: any) => void;
+  addCommentToStore: (
+    path: PathArray[],
+    value: any,
+    type: "submission" | "pagination"
+  ) => void;
   deleteCommentFromStore: (pathArr: PathArray[], index: number) => void;
   index: number;
+  handleCommentsPagination: (
+    commentId: string,
+    latestCommentNum: number,
+    queryNumLimit: number,
+    queryDepth: number,
+    pathArr: PathArray[]
+  ) => void;
 }
 
 const Comment = (props: CommentProps) => {
@@ -48,7 +60,7 @@ const Comment = (props: CommentProps) => {
         comment().comment_id
         // "e0257a7a-8f56-4b72-beb3-85093faa9f10"
       );
-      props.addComment(pathArr(), response);
+      props.addCommentToStore(pathArr(), response, "submission");
       setSettings((currentSettings) => ({...currentSettings, displayForm: false }));
     }catch(err){
       // console.log("err", err.data.httpStatus);
@@ -79,47 +91,6 @@ const Comment = (props: CommentProps) => {
     }
   };
 
-  const handleLoadMoreComments = async () => {
-    setSettings((currentSettings) => ({
-      ...currentSettings,
-      isLoading: true,
-    }));
-    try{
-      const response = await getAdditionalComments(post_id(), comment().comment_id, comment().comments.length, 4, comment().level + 1);
-      props.addComment(pathArr(), response);
-      setSettings((currentSettings) => ({
-        ...currentSettings,
-        isLoading: false,
-      }));
-    }catch(err){
-      const formattedError = formatErrorUrl(err as ErrorType);
-      setSettings((currentSettings) => ({
-        ...currentSettings,
-        isLoading: false,
-        error: {
-          display: true,
-          errorMessage: formattedError.errorMessage,
-          type: "pagination",
-        },
-      }));
-    }
-  }
-
-  const handleExpand = async () => {
-    setSettings((currentSettings) => ({
-      ...currentSettings,
-      isExpanded: !currentSettings.isExpanded
-    }));
-    if(comment().comments.length === 0){
-      await handleLoadMoreComments();
-    }
-  }
-
-  // createEffect(() => {
-  //   console.log("comment().is_deleted", comment().is_deleted);
-  // });
-
-  // console.log("this comment", comment())
   return (
     <li class="py-5">
       <div class="text-xl">
@@ -179,12 +150,28 @@ const Comment = (props: CommentProps) => {
       >
         <div class="text-red-600">{settings().error.errorMessage}</div>
       </Show>
-      <Show when={comment().num_of_children}>
-        <button onClick={handleExpand}>
-          {settings().isExpanded ? "-" : "+"}
-        </button>
-      </Show>
-      <Show when={settings().isExpanded}>
+      <ChildComments
+        comments={comment().comments}
+        isTopLevelComment={false}
+        numOfChildren={comment().num_of_children}
+        handleCommentsPagination={() => {
+            let latestCommentNum;
+            if (comment().comments.length !== 0) {
+              latestCommentNum =
+                comment().comments[comment().comments.length - 1].row_num;
+            } else {
+              latestCommentNum = 0;
+            }
+            return props.handleCommentsPagination(
+              comment().comment_id,
+              latestCommentNum,
+              4,
+              comment().level + 1,
+              pathArr()
+            );
+          }
+        }
+      >
         <ul class="ml-5">
           <For each={comment().comments}>
             {(comment, index) => (
@@ -192,35 +179,15 @@ const Comment = (props: CommentProps) => {
                 comment={comment}
                 post_id={post_id()}
                 pathArr={[...pathArr(), index(), "comments"]}
-                addComment={props.addComment}
+                addCommentToStore={props.addCommentToStore}
                 deleteCommentFromStore={props.deleteCommentFromStore}
                 index={index()}
+                handleCommentsPagination={props.handleCommentsPagination}
               />
             )}
           </For>
         </ul>
-        <Show
-          when={
-            comment().comments.length < comment().num_of_children &&
-            !settings().isLoading
-          }
-        >
-          <div class="ml-5">
-            <button onClick={handleLoadMoreComments}>Load more comments</button>
-          </div>
-        </Show>
-        <Show when={settings().isLoading}>
-          <div>Loading...</div>
-        </Show>
-        <Show
-          when={
-            settings().error.display &&
-            settings().error.type === "pagination"
-          }
-        >
-          <div class="text-red-600">{settings().error.errorMessage}</div>
-        </Show>
-      </Show>
+      </ChildComments>
     </li>
   );
 };
