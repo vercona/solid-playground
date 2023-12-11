@@ -13,7 +13,8 @@ interface CommentProps {
   addCommentToStore: (
     path: PathArray[],
     value: any,
-    type: "submission" | "pagination"
+    type: "submission" | "pagination",
+    numOfChildren: number
   ) => void;
   deleteCommentFromStore: (pathArr: PathArray[], index: number) => void;
   index: number;
@@ -60,7 +61,7 @@ const Comment = (props: CommentProps) => {
         comment().comment_id
         // "e0257a7a-8f56-4b72-beb3-85093faa9f10"
       );
-      props.addCommentToStore(pathArr(), response, "submission");
+      props.addCommentToStore(pathArr(), response, "submission", comment().num_of_children);
       setSettings((currentSettings) => ({...currentSettings, displayForm: false }));
     }catch(err){
       // console.log("err", err.data.httpStatus);

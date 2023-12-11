@@ -18,7 +18,7 @@ import { getAdditionalComments, getPostAndComments, submitComment } from "../api
 import Comment from "../components/Comment";
 import { errorPageUrl } from "../utils/constants";
 import { formatErrorUrl } from "../utils/utilFunctions";
-import { Comment as CommentType, PostAndComments, PathArray, ErrorType } from "../utils/interfaces";
+import { Comment as CommentType, PostAndComments, PathArray, ErrorType, Post as PostType } from "../utils/interfaces";
 import ReplyCommentField from "../components/ReplyCommentField";
 import ChildComments from "../components/ChildComments";
 
@@ -61,13 +61,31 @@ const Post = () => {
     getPostAndComments
   );
 
-  const addCommentToStore = (pathArr: PathArray[], value: CommentType[], type: "submission" | "pagination") => {
+  const addCommentToStore = (pathArr: PathArray[], value: CommentType[], type: "submission" | "pagination", numOfChildren: number) => {
     const singlePostValidation = singlePost() && singlePost()?.comments;
     if (singlePostValidation && type === "submission") {
       mutate(0, "comments", ...(pathArr as []), (existing: CommentType[]) => [
         ...value,
         ...existing,
       ]);
+      if(pathArr.length >= 2){
+        const formattedPathArr = pathArr.slice(0, -1);
+        const pathIndex: number = formattedPathArr.pop() as number;
+
+        mutate(0, "comments", ...(formattedPathArr as []), pathIndex, (existing: CommentType) => ({
+          ...existing,
+          num_of_children: existing.num_of_children + 1
+        }));
+      }else{
+        mutate(
+          0,
+          "post",
+          (existing: PostType) => ({
+            ...existing,
+            num_of_children: existing.num_of_children + 1,
+          })
+        );
+      }
     }
     if (singlePostValidation && type === "pagination") {
       mutate(0, "comments", ...(pathArr as []), (existing: CommentType[]) => [
@@ -101,7 +119,7 @@ const Post = () => {
           commentText()
         );
 
-        addCommentToStore([], response, "submission");
+        addCommentToStore([], response, "submission", singlePost()!.post.num_of_children);
         setSettings((currentSettings) => ({
           ...currentSettings,
           displayForm: false,
@@ -135,7 +153,12 @@ const Post = () => {
         queryNumLimit,
         queryDepth
       );
-      addCommentToStore(pathArr, response, "pagination");
+      addCommentToStore(
+        pathArr,
+        response,
+        "pagination",
+        singlePost()!.comments.length
+      );
     }
   };
 
