@@ -76,15 +76,11 @@ const Post = () => {
           ...existing,
           num_of_children: existing.num_of_children + 1
         }));
-      }else{
-        mutate(
-          0,
-          "post",
-          (existing: PostType) => ({
-            ...existing,
-            num_of_children: existing.num_of_children + 1,
-          })
-        );
+      }else if (pathArr.length === 0) {
+        mutate(0, "post", (existing: PostType) => ({
+          ...existing,
+          num_of_children: existing.num_of_children + 1,
+        }));
       }
     }
     if (singlePostValidation && type === "pagination") {

@@ -9,9 +9,7 @@ import { formatErrorUrl } from "../utils/utilFunctions";
 
 interface ChildCommentsProps {
   comments: CommentType[];
-  //   post_id: string;
   children: JSX.Element;
-  //   handleLoadMoreComments: () => void;
   handleCommentsPagination: () => void;
   isTopLevelComment: boolean;
   numOfChildren: number;
