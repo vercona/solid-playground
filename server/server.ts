@@ -2,7 +2,7 @@ import Fastify from "fastify";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { fastifyTRPCPlugin } from "@trpc/server/adapters/fastify";
 import cors from "@fastify/cors";
-import { routes } from "./routes";
+import { routes } from "./trpc/routes";
 import { db } from "./db";
 import { createContext } from "./context";
 

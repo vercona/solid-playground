@@ -1,32 +1,22 @@
-// import { FastifyInstance } from "fastify";
-import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
-import { sql, SelectQueryBuilder, QueryCreator } from "kysely";
-import { eq, isNull, sql as rawDrizzleSqlQuery } from "drizzle-orm";
-import { TRPCError, initTRPC } from "@trpc/server";
-import { ZodError, z } from "zod";
-import { db } from "./db";
-import { comments, commentsTableName, createCommentInput, createPostInput, createUserInput, deleteComment, getAllCommentsInput, getRepliedComments, getPost, getPostInput, posts, postsTableName, users, usersTableName } from "./db/schemas";
-import { kyselyDb, KyselyDatabase } from "./db/kyselyDb";
-import { comments_view } from "./db/views";
-
-export const t = initTRPC.create({
-  errorFormatter({ shape, error }) {
-    const isInputValidationError =
-      error.code === "BAD_REQUEST" && error.cause instanceof ZodError;
-    return {
-      ...shape,
-      data: {
-        ...shape.data,
-        inputValidationError: isInputValidationError
-          ? error.cause.flatten()
-          : null,
-      },
-    };
-  },
-});
-
-export const router = t.router;
-export const publicProcedure = t.procedure;
+import { SelectQueryBuilder, QueryCreator } from "kysely";
+import { z } from "zod";
+import { TRPCError } from "@trpc/server";
+import { router, publicProcedure } from "./trpc";
+import {
+  commentsTableName,
+  createCommentInput,
+  createPostInput,
+  createUserInput,
+  deleteComment,
+  getAllCommentsInput,
+  getRepliedComments,
+  getPost,
+  getPostInput,
+  postsTableName,
+  usersTableName,
+} from "../db/schemas";
+import { kyselyDb, KyselyDatabase } from "../db/kyselyDb";
+import { comments_view } from "../db/views";
 
 interface GetComments extends KyselyDatabase {
   c: KyselyDatabase["comments"] & { row_num: number };
@@ -113,7 +103,6 @@ const nestComments = (
   });
 };
 
-
 interface Comments {
   comment_id: string;
   user: {
@@ -134,41 +123,43 @@ interface Comments {
 }
 
 const CommentsSchema: z.ZodType<Comments> = z.lazy(() =>
-  z.object({
-    comment_id: z.string(),
-    user: z.object({
-      username: z.string().nullable(),
-      user_id: z.string().nullable()
-    }),
-    body: z.string().nullable(),
-    created_at: z.date(),
-    level: z.number(),
-    is_deleted: z.boolean(),
-    comment_num: z.number(),
-    max_child_comment_num: z.number().nullable(),
-    likes: z.number(),
-    dislikes: z.number(),
-    num_of_children: z.number(),
-    row_num: z.number(),
-    comments: z.array(CommentsSchema),
-  }).refine((comment) => {
-    if(comment.is_deleted){
-      return (
-        comment.body === null &&
-        comment.user.user_id === null &&
-        comment.user.username === null
-      );
-    }else {
-      return (
-        typeof comment.body === "string" &&
-        typeof comment.user.user_id === "string" &&
-        typeof comment.user.username === "string"
-      );
-    }
-  })
+  z
+    .object({
+      comment_id: z.string(),
+      user: z.object({
+        username: z.string().nullable(),
+        user_id: z.string().nullable(),
+      }),
+      body: z.string().nullable(),
+      created_at: z.date(),
+      level: z.number(),
+      is_deleted: z.boolean(),
+      comment_num: z.number(),
+      max_child_comment_num: z.number().nullable(),
+      likes: z.number(),
+      dislikes: z.number(),
+      num_of_children: z.number(),
+      row_num: z.number(),
+      comments: z.array(CommentsSchema),
+    })
+    .refine((comment) => {
+      if (comment.is_deleted) {
+        return (
+          comment.body === null &&
+          comment.user.user_id === null &&
+          comment.user.username === null
+        );
+      } else {
+        return (
+          typeof comment.body === "string" &&
+          typeof comment.user.user_id === "string" &&
+          typeof comment.user.username === "string"
+        );
+      }
+    })
 );
 
-export const routes = router({
+const messageRoutes = router({
   getComment: publicProcedure.query(async () => {
     const allComments = await kyselyDb
       .selectFrom(commentsTableName)
@@ -189,7 +180,7 @@ export const routes = router({
       .insertInto(usersTableName)
       .values({ ...input })
       .returningAll()
-      .executeTakeFirstOrThrow()
+      .executeTakeFirstOrThrow();
     return response;
   }),
   getPost: publicProcedure.input(getPostInput).query(async (req) => {
@@ -214,69 +205,82 @@ export const routes = router({
       .executeTakeFirstOrThrow();
     return response;
   }),
-  getRepliedComments: publicProcedure.input(getRepliedComments).query(async (req) => {
-    const { post_id, parent_id, begin_comment_num, query_num_limit, start_level, query_depth } = req.input;
+  getRepliedComments: publicProcedure
+    .input(getRepliedComments)
+    .query(async (req) => {
+      const {
+        post_id,
+        parent_id,
+        begin_comment_num,
+        query_num_limit,
+        start_level,
+        query_depth,
+      } = req.input;
 
-    const paginationQueries = (addParentIdCondition: boolean) => (qb: SelectQueryBuilder<GetComments, "c", {}>) => {
-      let baseQuery = qb
-        .$call(reusable)
-      if(query_depth || query_depth === 0){
-        baseQuery = baseQuery.where("c.level", "<=", start_level + query_depth)
-      }
-      if(addParentIdCondition){
-        if(parent_id){
-          baseQuery = baseQuery.where("parent_id", "=", parent_id)
-        }else{
-          baseQuery = baseQuery.where("parent_id", "is", parent_id);
-        }
-      }
-      return baseQuery;
-    }
+      const paginationQueries =
+        (addParentIdCondition: boolean) =>
+        (qb: SelectQueryBuilder<GetComments, "c", {}>) => {
+          let baseQuery = qb.$call(reusable);
+          if (query_depth || query_depth === 0) {
+            baseQuery = baseQuery.where(
+              "c.level",
+              "<=",
+              start_level + query_depth
+            );
+          }
+          if (addParentIdCondition) {
+            if (parent_id) {
+              baseQuery = baseQuery.where("parent_id", "=", parent_id);
+            } else {
+              baseQuery = baseQuery.where("parent_id", "is", parent_id);
+            }
+          }
+          return baseQuery;
+        };
 
-    console.log("parent_id", parent_id)
-    const getCommentsRes = await kyselyDb
-      .withRecursive(
-        "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes, num_of_children, row_num)",
-        (db: QueryCreator<GetComments>) =>
-          db
-            .with("c", comments_view)
-            .selectFrom("c")
-            .$call(paginationQueries(true))
-            .where("post_id", "=", post_id)
-            .unionAll((db) =>
-              db
-                .selectFrom("t")
-                .innerJoin("c", "c.parent_id", "t.comment_id")
-                .$call(paginationQueries(false))
-            )
-      )
-      .selectFrom("t")
-      .selectAll()
-      .where((eb) =>
-        eb.or([
-          eb.and([
-            eb("row_num", ">", begin_comment_num),
-            eb("row_num", "<=", begin_comment_num + query_num_limit),
-          ]),
-          eb.and([
-            eb("level", ">", start_level),
-            eb("row_num", "<=", begin_comment_num + query_num_limit),
-          ]),
-        ])
-      )
-      .orderBy("created_at")
-      .execute();
+      const getCommentsRes = await kyselyDb
+        .withRecursive(
+          "t(user_id, username, comment_id, body, level, parent_id, comment_num, created_at, is_deleted, max_child_comment_num, likes, dislikes, num_of_children, row_num)",
+          (db: QueryCreator<GetComments>) =>
+            db
+              .with("c", comments_view)
+              .selectFrom("c")
+              .$call(paginationQueries(true))
+              .where("post_id", "=", post_id)
+              .unionAll((db) =>
+                db
+                  .selectFrom("t")
+                  .innerJoin("c", "c.parent_id", "t.comment_id")
+                  .$call(paginationQueries(false))
+              )
+        )
+        .selectFrom("t")
+        .selectAll()
+        .where((eb) =>
+          eb.or([
+            eb.and([
+              eb("row_num", ">", begin_comment_num),
+              eb("row_num", "<=", begin_comment_num + query_num_limit),
+            ]),
+            eb.and([
+              eb("level", ">", start_level),
+              eb("row_num", "<=", begin_comment_num + query_num_limit),
+            ]),
+          ])
+        )
+        .orderBy("created_at")
+        .execute();
 
       console.log("getCommentsRes", getCommentsRes);
-    if (getCommentsRes.length === 0) {
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "Comments not found",
-      });
-    }
+      if (getCommentsRes.length === 0) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Comments not found",
+        });
+      }
 
-    return nestComments(getCommentsRes, parent_id);
-  }),
+      return nestComments(getCommentsRes, parent_id);
+    }),
   getPostAndComments: publicProcedure
     .input(getAllCommentsInput)
     .output(
@@ -321,7 +325,6 @@ export const routes = router({
             eb.and([
               eb("level", ">", 0),
               eb("level", "<=", limitLevel),
-              // eb("level", "<=", 1),
               // can add "greater than row N" for pagination start location
               eb("row_num", "<=", limitChildRowNum),
             ]),
@@ -331,11 +334,19 @@ export const routes = router({
         .execute();
 
       const getPostsAndUsersRes = await kyselyDb
-          .selectFrom("posts")
-          .innerJoin("profiles", "posts.user_id", "profiles.user_id")
-          .select(["posts.created_at", "description", "profiles.user_id", "username", "title", "post_id", "num_of_children"])
-          .where("post_id", '=', post_id)
-          .execute();
+        .selectFrom("posts")
+        .innerJoin("profiles", "posts.user_id", "profiles.user_id")
+        .select([
+          "posts.created_at",
+          "description",
+          "profiles.user_id",
+          "username",
+          "title",
+          "post_id",
+          "num_of_children",
+        ])
+        .where("post_id", "=", post_id)
+        .execute();
 
       if (getPostsAndUsersRes.length === 0) {
         throw new TRPCError({
@@ -346,8 +357,14 @@ export const routes = router({
 
       const nestedComments = nestComments(getCommentsRes);
 
-      const { user_id, username, created_at, title, description, num_of_children } =
-        getPostsAndUsersRes[0];
+      const {
+        user_id,
+        username,
+        created_at,
+        title,
+        description,
+        num_of_children,
+      } = getPostsAndUsersRes[0];
 
       return {
         post: {
@@ -420,11 +437,11 @@ export const routes = router({
           "dislikes",
           "comment_num",
           "is_deleted",
-          "num_of_children"
+          "num_of_children",
         ])
         .execute();
 
-        console.log("response", response)
+      console.log("response", response);
       const innerResponse = response[0];
       const formattedComment = [
         {
@@ -450,19 +467,13 @@ export const routes = router({
     }),
   deleteComment: publicProcedure.input(deleteComment).mutation(async (req) => {
     const input = req.input;
-    // const response = await db.delete(comments).where(eq(comments.comment_id, input.comment_id)).returning({ deleted_id: comments.comment_id });
-    // const response = await db
-    //   .update(comments)
-    //   .set({ is_deleted: true })
-    //   .where(eq(comments.comment_id, input.comment_id))
-    //   .returning({ deleted_id: comments.comment_id });
-    
+
     const response = await kyselyDb
       .updateTable(commentsTableName)
       .set({ is_deleted: true })
       .where("comment_id", "=", input.comment_id)
       .returning("comment_id")
-      .execute()
+      .execute();
 
     if (response.length === 0) {
       throw new TRPCError({
@@ -477,19 +488,13 @@ export const routes = router({
     .input(deleteComment)
     .mutation(async (req) => {
       const input = req.input;
-      // const response = await db
-      //   .delete(comments)
-      //   .where(eq(comments.comment_id, input.comment_id))
-      //   .returning({ comment_id: comments.comment_id });
-      // return response;
       const response = await kyselyDb
         .deleteFrom("comments")
-        .where('comments.comment_id', '=', input.comment_id)
+        .where("comments.comment_id", "=", input.comment_id)
         .returning("comment_id")
-        .execute()
+        .execute();
       return response;
     }),
 });
 
-// export default routes;
-export type Routes = typeof routes;
+export default messageRoutes;
