@@ -1,44 +1,16 @@
+// NOTE: this file can be auto-generated/updated later
+
 import { router } from "../trpc";
 
-
-
-import { createComment } from './createComment'
-import { createPost } from './createPost'
-import { createUser } from './createUser'
-import { deleteComment } from './deleteComment'
-import { getAllUsers } from './getAllUsers'
-import { getComment } from './getComment'
-import { getPost } from './getPost'
-import { getPostAndComments } from './getPostAndComments'
-import { getRepliedComments } from './getRepliedComments'
-import { removeCommentEntirely } from './removeCommentEntirely'
-
-
-
 export default router({
-  createComment,
-  createPost,
-  createUser,
-  deleteComment,
-  getAllUsers,
-  getComment,
-  getPost,
-  getPostAndComments,
-  getRepliedComments,
-  removeCommentEntirely
+  createComment: require('./createComment').default,
+  createPost: require('./createPost').default,
+  createUser: require('./createUser').default,
+  deleteComment: require('./deleteComment').default,
+  getAllUsers: require('./getAllUsers').default,
+  getComment: require('./getComment').default,
+  getPost: require('./getPost').default,
+  getPostAndComments: require('./getPostAndComments').default,
+  getRepliedComments: require('./getRepliedComments').default,
+  removeCommentEntirely: require('./removeCommentEntirely').default
 });
-
-
-
-/* 
-
-NOTE: this file can be auto-generated/updated later and cleaned up a bit with esnext
-
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
-export default router({
-  createComment: require('./createComment'),
-  ...
-});
-
-*/

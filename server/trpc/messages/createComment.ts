@@ -15,7 +15,7 @@ const createCommentInput = createInsertSchema(comments).omit({
 
 import { kyselyDb } from "../../db/kyselyDb";
 import { publicProcedure } from "../trpc";
-export const createComment = publicProcedure
+export default publicProcedure
     .input(createCommentInput)
     .mutation(async (req) => {
       const { parent_id, level, user_id, post_id, body } = req.input;

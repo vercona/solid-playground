@@ -4,7 +4,7 @@ import { usersTableName } from "../../db/schemas";
 
 import { publicProcedure } from "../trpc";
 import { kyselyDb } from "../../db/kyselyDb";
-export const getAllUsers = (
+export default (
   publicProcedure
     .query(async () => {
       const allUsers = await kyselyDb

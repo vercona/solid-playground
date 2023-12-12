@@ -69,7 +69,7 @@ import { comments_view } from "../../db/views";
 import { reusable } from './utils/reusable'
 import { nestComments, Comments } from './utils/nested'
 
-export const getPostAndComments = (
+export default (
   publicProcedure
     .input(getAllCommentsInput)
     .output(

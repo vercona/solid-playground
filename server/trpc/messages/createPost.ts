@@ -10,7 +10,7 @@ const createPostInput = createInsertSchema(posts)
 
 import { publicProcedure } from "../trpc";
 import { kyselyDb } from "../../db/kyselyDb";
-export const createPost = (
+export default (
   publicProcedure
     .input(createPostInput)
     .mutation(async (req) => {

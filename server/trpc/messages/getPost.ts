@@ -10,7 +10,7 @@ export const getPostInput = createSelectSchema(posts)
 
 import { publicProcedure } from "../trpc"
 import { kyselyDb } from "../../db/kyselyDb"
-export const getPost = (
+export default (
   publicProcedure
     .input(getPostInput)
     .query(async (req) => {

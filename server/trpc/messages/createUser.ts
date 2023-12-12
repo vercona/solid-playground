@@ -10,7 +10,7 @@ export const createUserInput = createInsertSchema(users)
 
 import { kyselyDb } from "../../db/kyselyDb";
 import { publicProcedure } from "../trpc";
-export const createUser = (
+export default (
   publicProcedure
     .input(createUserInput)
     .mutation(async (req) => {

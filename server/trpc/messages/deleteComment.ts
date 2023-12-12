@@ -11,7 +11,7 @@ export const deleteCommentInput = createSelectSchema(comments)
 import { kyselyDb } from "../../db/kyselyDb";
 import { publicProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
-export const deleteComment = ( 
+export default ( 
   publicProcedure
     .input(deleteCommentInput)
     .mutation(async (req) => {

@@ -10,7 +10,7 @@ export const deleteCommentInput = createSelectSchema(comments)
 
 
 
-export const removeCommentEntirely = (
+export default (
   publicProcedure
     .input(deleteCommentInput)
     .mutation(async (req) => {

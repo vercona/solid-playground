@@ -25,7 +25,7 @@ import { comments_view } from "../../db/views";
 import { nestComments, GetComments } from './utils/nested'
 import { reusable } from './utils/reusable'
 
-export const getRepliedComments = (
+export default (
   publicProcedure
     .input(input)
     .query(async (req) => {
