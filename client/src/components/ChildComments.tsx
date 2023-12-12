@@ -1,8 +1,7 @@
 import { For, JSX, Show, createSignal } from "solid-js";
 import type {
   Comment as CommentType,
-  ErrorType,
-  PathArray,
+  ErrorType
 } from "../utils/interfaces";
 import { destructure } from "@solid-primitives/destructure";
 import { formatErrorUrl } from "../utils/utilFunctions";
