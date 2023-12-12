@@ -1,4 +1,4 @@
-import { Kysely, PostgresDialect, sql } from "kysely";
+import { Kysely, PostgresDialect } from "kysely";
 import { Kyselify } from "drizzle-orm/kysely";
 import { Pool } from "pg";
 import "dotenv/config";
