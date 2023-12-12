@@ -1,0 +1,1 @@
+ALTER TABLE "comments" ALTER COLUMN "id_path" SET DATA TYPE text;

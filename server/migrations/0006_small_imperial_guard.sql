@@ -1,0 +1,1 @@
+ALTER TABLE "comments" RENAME COLUMN "int1" TO "level";

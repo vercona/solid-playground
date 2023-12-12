@@ -1,0 +1,1 @@
+ALTER TABLE "comments" ADD COLUMN "num_of_replies" integer DEFAULT 0 NOT NULL;
