@@ -4,8 +4,14 @@
   "description": "prototyping solid without overhead of other systems",
   "main": "index.js",
   "scripts": {
+    "start:FE": "cd client & npm run dev",
+    "start:BE": "cd server & npm start",
+    "start": "concurrently \"npm:start:BE\" \"npm:start:FE\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
 }
