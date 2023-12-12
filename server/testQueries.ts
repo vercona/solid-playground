@@ -1,6 +1,6 @@
 //@ts-nocheck
 import { createTRPCProxyClient, httpBatchLink, loggerLink } from "@trpc/client";
-import type { Routes } from "./routes";
+import type { Routes } from "./trpc/routes";
 
 const trpc = createTRPCProxyClient<Routes>({
   links: [
