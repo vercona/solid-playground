@@ -26,7 +26,7 @@ export default (
 
 
 /***   Demo   ***/
-// npm run demo:trpc messages/createPost
+// npm run demo:trpc messages/getPost
 import type { DemoClient } from "../routes";
 export async function demo(trpc: DemoClient) {
   return await trpc.messages.getPost.query({
