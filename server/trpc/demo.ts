@@ -13,7 +13,7 @@ export const demoTRPC = createTRPCProxyClient<Routes>({
 })
 
 
-export function CMDL_IIF(cb:any, cmdl:boolean) {
+export const CMDL_IIF = (cmdl:boolean) => (cb:()=>any) =>{
   !(async ()=>{
     if (cmdl) {
         try {
@@ -25,3 +25,6 @@ export function CMDL_IIF(cb:any, cmdl:boolean) {
     }
   })()
 } 
+
+export const DEMO = CMDL_IIF
+export const trpc = demoTRPC
