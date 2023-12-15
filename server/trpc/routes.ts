@@ -12,3 +12,6 @@ export const routes = router({
 
 
 export type Routes = typeof routes;
+
+import type { createTRPCProxyClient } from "@trpc/client";
+export type DemoClient = ReturnType<typeof createTRPCProxyClient<Routes>>

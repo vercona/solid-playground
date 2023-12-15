@@ -27,17 +27,3 @@ export default (
       return response;
     })
 )
-
-
-/***   Demo   ***/
-import type { Routes } from "../routes";
-import { createTRPCProxyClient } from "@trpc/client";
-export async function demo(trpc: ReturnType<typeof createTRPCProxyClient<Routes>>) {
-  try {
-    return await trpc.messages.getPost.query({
-      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
-    })
-  } catch (err) {
-    return err
-  }
-}
