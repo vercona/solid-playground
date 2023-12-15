@@ -28,18 +28,3 @@ export default (
     })
 )
 
-
-/***   Demo   ***/
-import { demoTRPC } from '../demo'
-!(async ()=>{
-  if (require.main === module) {
-      try {
-        const response = await demoTRPC.messages.getPost.query({
-          post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
-        });
-        console.log("response", response)
-      } catch (err) {
-        console.log("error", err)
-      }
-  }
-})()
