@@ -4,9 +4,9 @@ import { Pool } from "pg";
 import "dotenv/config";
 import { users, posts, comments } from "./schemas";
 
-if (!process.env.DATABASE_URL) {
+/* if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is missing");
-}
+} */
 
 const connectionString = process.env.DATABASE_URL;
 
