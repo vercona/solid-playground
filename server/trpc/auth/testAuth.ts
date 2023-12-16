@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { supabaseClient } from "../../db"
+import { supabaseClient } from "../../db/supabase"
+
 
 /***   Query   ***/
 import { publicProcedure } from "../trpc";
