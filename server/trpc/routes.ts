@@ -2,11 +2,12 @@
 
 import { router } from "./trpc";
 import messages from "./messages";
-
+import authRoutes from "./authRoutes";
 
 
 export const routes = router({
-  messages
+  messages,
+  auth: authRoutes
 })
 
 

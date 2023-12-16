@@ -1,4 +1,8 @@
+import { Location } from "@solidjs/router";
 import { ErrorType } from "./interfaces";
+import { createSignal } from "solid-js";
+import { cookieStorage, makePersisted } from "@solid-primitives/storage";
+import { authTokenCookieName } from "./constants";
 
 interface TimeDifference {
   minutes: number;
@@ -77,3 +81,22 @@ export const getSentTimeMessage = ({ minutes, hours, days, weeks, months, years 
     return `${years} ${singularOrPluralMessage("year", years)} ago`;
   }
 };
+
+export const storeTokenFromUrl = (location: Location<unknown>) => {
+  const formattedLocationHash = location.hash.replace("#access_token", "access_token");
+  const searchParams = new URLSearchParams(formattedLocationHash);
+  const accessToken = searchParams.get("access_token");
+  const expires = searchParams.get("expires_at");
+  if (accessToken && expires) {
+    const formattedExpirationDate = new Date(Number(expires) * 1000);
+    cookieStorage.setItem(authTokenCookieName, accessToken, { sameSite: "Lax", expires: formattedExpirationDate });
+  }
+};
+
+export const getAuthTokenFromCookie = () => {
+  const authToken = cookieStorage.getItem(authTokenCookieName);
+  if(authToken){
+    return authToken;
+  }
+  return "";
+}

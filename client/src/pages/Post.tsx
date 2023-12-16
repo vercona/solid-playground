@@ -1,9 +1,9 @@
 // Solid Imports
-import { Show, createResource, ErrorBoundary, For, Signal, createSignal} from "solid-js";
+import { Show, createResource, ErrorBoundary, For, Signal, createSignal } from "solid-js";
 import type {
   ResourceSource,
   ResourceFetcher,
-  Resource
+  Resource,
 } from "solid-js";
 import { Navigate, useParams } from "@solidjs/router";
 import { createStore, reconcile, unwrap } from "solid-js/store";

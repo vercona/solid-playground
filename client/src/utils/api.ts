@@ -2,6 +2,7 @@ import { createTRPCProxyClient, httpBatchLink, loggerLink } from "@trpc/client";
 import { type inferRouterOutputs } from "@trpc/server";
 
 import type { Routes } from "../../../server/trpc/routes";
+import { getAuthTokenFromCookie } from "./utilFunctions";
 
 const getBaseUrl = () => {
 //   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
@@ -15,6 +16,11 @@ export const trpc = createTRPCProxyClient<Routes>({
     }),
     httpBatchLink({
       url: `${getBaseUrl()}/trpc`,
+      async headers() {
+        return {
+          authorization: getAuthTokenFromCookie()
+        }
+      }
     }),
   ],
 });
