@@ -1,13 +1,13 @@
 import { posts, postsTableName } from "../../db/schemas";
 
 
-
+/***   INPUT   ***/
 import { createInsertSchema } from "drizzle-zod";
 const createPostInput = createInsertSchema(posts)
   .omit({ post_id: true, created_at: true });
 
 
-
+/***   Query   ***/
 import { publicProcedure } from "../trpc";
 import { kyselyDb } from "../../db/kyselyDb";
 export default (
@@ -27,35 +27,3 @@ export default (
       return response;
     })
 )
-
-
-import type { Routes } from "../routes";
-import { createTRPCProxyClient, httpBatchLink, loggerLink } from "@trpc/client";
-
-!(async ()=>{
-  if (require.main === module) {
-    const trpc = createTRPCProxyClient<Routes>({
-      links: [
-        loggerLink({
-          enabled: () => true
-        }),
-        httpBatchLink({
-          url: "http://localhost:8080/trpc",
-        })
-      ]
-    })
-
-    const fetchQueries = async () => {
-      try {
-        const response = await trpc.messages.getPost.query({
-          post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
-        });
-        console.log("response", response)
-      } catch (err) {
-        console.log("error", err)
-      }
-    };
-
-    await fetchQueries()
-  }
-})()
