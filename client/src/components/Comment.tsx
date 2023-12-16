@@ -1,4 +1,4 @@
-import { For, Show, createSignal, createEffect } from "solid-js";
+import { For, Show, createSignal } from "solid-js";
 import { destructure } from "@solid-primitives/destructure";
 import { calcTimeDifference, formatErrorUrl, getSentTimeMessage } from "../utils/utilFunctions";
 import { deleteComment, submitComment } from "../apiCalls/CommentSectionCalls";

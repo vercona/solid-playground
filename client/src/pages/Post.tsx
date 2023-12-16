@@ -1,15 +1,13 @@
 // Solid Imports
-import { Show, createResource, ErrorBoundary, For, createEffect, Signal, createSignal } from "solid-js";
+import { Show, createResource, ErrorBoundary, For, Signal, createSignal} from "solid-js";
 import type {
   ResourceSource,
   ResourceFetcher,
-  InitializedResource,
-  Resource,
+  Resource
 } from "solid-js";
 import { Navigate, useParams } from "@solidjs/router";
-import { createDeepSignal } from "@solid-primitives/resource";
 import { createStore, reconcile, unwrap } from "solid-js/store";
-import type { Store, SetStoreFunction } from "solid-js/store";
+import type { SetStoreFunction } from "solid-js/store";
 
 // API Imports
 import { getAdditionalComments, getPostAndComments, submitComment } from "../apiCalls/CommentSectionCalls";
@@ -23,15 +21,15 @@ import ReplyCommentField from "../components/ReplyCommentField";
 import ChildComments from "../components/ChildComments";
 
 function resourceStore<T, S>(watcher:ResourceSource<S>, fetcher:ResourceFetcher<S, T, unknown>, options={}) {
-  const [store, setStore] = createStore<PostAndComments[]>([]);
+  const [store, setStore] = createStore<T[]>([]);
 
-  function toSignal<T>(v?: T) { 
+  function toSignal<T>(v: T) { 
     return ([
       () => store[0],
       (update: T) => (
         setStore(0, reconcile(typeof update === "function" ? update(unwrap(store[0])) : v))
       )
-    ] as Signal<T | undefined>)
+    ] as unknown as Signal<T>)
   }
 
   const [ status, { refetch } ] = createResource<T, S>(

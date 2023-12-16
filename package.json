@@ -4,8 +4,16 @@
   "description": "prototyping solid without overhead of other systems",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start:FE": "cd client & npm run dev",
+    "start:BE": "cd server & npm start",
+    "start": "concurrently \"npm:start:BE\" \"npm:start:FE\"",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "demo:trpc": "tsx server/trpc/demo.ts"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "tsx": "^4.6.2"
+  }
 }
