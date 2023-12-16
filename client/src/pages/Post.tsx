@@ -1,15 +1,13 @@
 // Solid Imports
-import { Show, createResource, ErrorBoundary, For, createEffect, Signal, createSignal } from "solid-js";
+import { Show, createResource, ErrorBoundary, For, Signal, createSignal } from "solid-js";
 import type {
   ResourceSource,
   ResourceFetcher,
-  InitializedResource,
   Resource,
 } from "solid-js";
 import { Navigate, useParams } from "@solidjs/router";
-import { createDeepSignal } from "@solid-primitives/resource";
 import { createStore, reconcile, unwrap } from "solid-js/store";
-import type { Store, SetStoreFunction } from "solid-js/store";
+import type { SetStoreFunction } from "solid-js/store";
 
 // API Imports
 import { getAdditionalComments, getPostAndComments, submitComment } from "../apiCalls/CommentSectionCalls";

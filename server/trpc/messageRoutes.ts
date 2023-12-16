@@ -1,7 +1,7 @@
 import { SelectQueryBuilder, QueryCreator } from "kysely";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, publicProcedure } from "./trpc";
+import { router, publicProcedure, protectedProcedure } from "./trpc";
 import {
   commentsTableName,
   createCommentInput,
@@ -281,7 +281,7 @@ const messageRoutes = router({
 
       return nestComments(getCommentsRes, parent_id);
     }),
-  getPostAndComments: publicProcedure
+  getPostAndComments: protectedProcedure
     .input(getAllCommentsInput)
     .output(
       z.object({
