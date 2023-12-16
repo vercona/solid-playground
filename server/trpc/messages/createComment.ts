@@ -1,7 +1,7 @@
 import { comments } from "../../db/schemas";
 
 
-
+/***   INPUT   ***/
 import { createInsertSchema } from "drizzle-zod";
 const createCommentInput = createInsertSchema(comments).omit({
   comment_id: true,
@@ -12,7 +12,7 @@ const createCommentInput = createInsertSchema(comments).omit({
 });
 
 
-
+/***   Query   ***/
 import { kyselyDb } from "../../db/kyselyDb";
 import { publicProcedure } from "../trpc";
 export default publicProcedure
@@ -99,3 +99,30 @@ export default publicProcedure
       ];
       return formattedComment;
     })
+
+
+/***   Demo   ***/
+// npm run demo:trpc messages/createComment
+import type { DemoClient } from "../routes";
+export async function demo(trpc: DemoClient) {
+  const Baam = "05aaaae2-cfb3-4c0b-9431-f0dc451c4b22";
+  return Promise.all([ 
+    // Root comment
+    trpc.messages.createComment.mutate({
+      level: 0,
+      parent_id: null,
+      user_id: Baam,
+      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+      body: "First level comment with Baam",
+    }),
+
+    // Child comment
+    trpc.messages.createComment.mutate({
+      level: 1,
+      parent_id: "e0257a7a-8f56-4b72-beb3-85093faa9f1c",
+      user_id: Baam,
+      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+      body: "Testing new create with Baam",
+    })
+  ])
+}

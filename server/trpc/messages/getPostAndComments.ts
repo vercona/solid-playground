@@ -1,10 +1,20 @@
 import { users, posts, comments } from "../../db/schemas";
 import type { GetComments } from './utils/nested'
 
-
-
 import { z } from "zod";
 import { createSelectSchema } from "drizzle-zod";
+
+
+/***   INPUT   ***/
+const getAllCommentsInput = createSelectSchema(comments)
+  .pick({ post_id: true })
+  .extend({ 
+    limitChildRowNum: z.number(), 
+    limitLevel: z.number() 
+  });
+
+
+/***   Output   ***/
 const userSchema = createSelectSchema(users)
   .omit({ created_at: true });
 
@@ -13,13 +23,6 @@ const getPost = createSelectSchema(posts)
   .extend({ 
     created_at: z.date(), 
     user: userSchema 
-  });
-
-const getAllCommentsInput = createSelectSchema(comments)
-  .pick({ post_id: true })
-  .extend({ 
-    limitChildRowNum: z.number(), 
-    limitLevel: z.number() 
   });
 
 const CommentsSchema: z.ZodType<Comments> = z.lazy(() =>
@@ -171,3 +174,19 @@ export default (
       };
     })
 )
+
+
+/***   Demo   ***/
+// npm run demo:trpc messages/getPostAndComments
+import type { DemoClient } from "../routes";
+export async function demo(trpc: DemoClient) {
+  return JSON.stringify(
+    await trpc.messages.getPostAndComments.query({
+      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+      limitChildRowNum: 3,
+      limitLevel: 3
+    }),
+    null,
+    2
+  )
+}

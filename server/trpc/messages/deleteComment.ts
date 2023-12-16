@@ -1,13 +1,13 @@
 import { comments, commentsTableName } from "../../db/schemas";
 
 
-
+/***   INPUT   ***/
 import { createSelectSchema } from "drizzle-zod";
 export const deleteCommentInput = createSelectSchema(comments)
   .pick({ comment_id: true });
 
 
-
+/***   Query   ***/
 import { kyselyDb } from "../../db/kyselyDb";
 import { publicProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
@@ -34,3 +34,13 @@ export default (
       return response;
     })
 )
+
+
+/***   Demo   ***/
+// npm run demo:trpc messages/deleteComment
+import type { DemoClient } from "../routes";
+export async function demo(trpc: DemoClient) {
+  return await trpc.messages.deleteComment.mutate({
+    comment_id: "9f1b96dc-fce8-4751-ac9a-ab06c966a820",
+  })
+}

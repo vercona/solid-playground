@@ -3,13 +3,13 @@ import { comments } from "../../db/schemas";
 import { kyselyDb } from "../../db/kyselyDb";
 
 
-
+/***   INPUT   ***/
 import { createSelectSchema } from "drizzle-zod";
 export const deleteCommentInput = createSelectSchema(comments)
   .pick({ comment_id: true });
 
 
-
+/***   Query   ***/
 export default (
   publicProcedure
     .input(deleteCommentInput)
@@ -23,3 +23,14 @@ export default (
       return response;
     })
 )
+
+
+/***   Demo   ***/
+// npm run demo:trpc messages/removeCommentEntirely
+import type { DemoClient } from "../routes";
+export async function demo(trpc: DemoClient) {
+  let id = ''
+  return await trpc.messages.removeCommentEntirely.mutate({
+    comment_id: id,
+  })
+}

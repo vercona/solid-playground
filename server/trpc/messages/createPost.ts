@@ -27,3 +27,16 @@ export default (
       return response;
     })
 )
+
+
+/***   Demo   ***/
+// npm run demo:trpc messages/createPost
+import type { DemoClient } from "../routes";
+export async function demo(trpc: DemoClient) {
+  const SaitamaId = 'e274ca42-560c-49ef-95ab-c10511fb8412';
+  return await trpc.messages.createPost.mutate({
+    title: "Third post with Kysley",
+    description: "This post was created using Kysley",
+    user_id: SaitamaId,
+  })
+}

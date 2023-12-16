@@ -1,7 +1,7 @@
 import { commentsTableName } from "../../db/schemas";
 
 
-
+/***   Query   ***/
 import { publicProcedure } from "../trpc";
 import { kyselyDb } from "../../db/kyselyDb";
 export default (
@@ -14,3 +14,11 @@ export default (
       return allComments;
     })
 )
+
+
+/***   Demo   ***/
+// npm run demo:trpc messages/getComment
+import type { DemoClient } from "../routes";
+export async function demo(trpc: DemoClient) {
+  return await trpc.messages.getComment.query()
+}

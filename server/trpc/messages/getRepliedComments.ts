@@ -1,11 +1,9 @@
 import { comments } from "../../db/schemas";
 
 
-
+/***   INPUT   ***/
 import { createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
-
-
 const input = createSelectSchema(comments)
   .pick({ post_id: true, parent_id: true })
   .extend({
@@ -16,7 +14,7 @@ const input = createSelectSchema(comments)
   });
 
 
-
+/***   Query   ***/
 import { SelectQueryBuilder, QueryCreator } from "kysely";
 import { TRPCError } from "@trpc/server";
 import { publicProcedure } from "../trpc";
@@ -103,3 +101,24 @@ export default (
       return nestComments(getCommentsRes, parent_id);
     })
 )
+
+
+/***   Demo   ***/
+// npm run demo:trpc messages/getRepliedComments
+import type { DemoClient } from "../routes";
+export async function demo(trpc: DemoClient) {
+  return JSON.stringify(
+    await trpc.messages.getRepliedComments.query({
+      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+      // parent_id: "c0395394-365c-4f1b-b079-2efd01cb751c",
+      // parent_id: "1259e113-6412-4b95-84b0-b13e6453eaaa",
+      parent_id: null,
+      begin_comment_num: 0,
+      query_num_limit: 3,
+      start_level: 0,
+      query_depth: null
+    }),
+    null,
+    2
+  )
+}

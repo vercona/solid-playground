@@ -3,10 +3,10 @@
 import { router } from "../trpc"
 
 import createComment from './createComment'
-import createPost from './createUser'
-import createUser from './deleteComment'
-import deleteComment from './getAllUsers'
-import getAllUsers from './createComment'
+import createPost from './createPost'
+import createUser from './createUser'
+import deleteComment from './deleteComment'
+import getAllUsers from './getAllUsers'
 import getComment from './getComment'
 import getPost from './getPost'
 import getPostAndComments from './getPostAndComments'
