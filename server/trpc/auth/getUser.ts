@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { supabaseClient } from "../../db"
+import { supabaseClient } from "../../db" // this does cause drizzle to needlessly execute
 
 
 /***   Query   ***/
