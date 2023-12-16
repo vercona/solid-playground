@@ -39,7 +39,15 @@ let test = url.pathToFileURL(fullPath).href;
   }
 
   let query = apiModule.demo
+  /* NOTE: 
+    we can have other exports for things like headers et al.
+    if it necessary or such things to be dynamic.
+    `let headers = apiModule.headers`
 
+    Otherwise, it may be best to use `Trial/demo-composable` branch
+    which may better to handle crafting unique queries. 
+    (ie you can resolve trpc client at runtime which means its easier to edit/update)
+  */
 
   const trpc = createTRPCProxyClient<Routes>({
     links: [
