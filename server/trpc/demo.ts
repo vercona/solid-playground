@@ -48,6 +48,12 @@ let test = url.pathToFileURL(fullPath).href;
       }),
       httpBatchLink({
         url: "http://localhost:8080/trpc",
+        async headers() {
+          return {
+            authorization:
+              "eyJhbGciOiJIUzI1NiIsImtpZCI6IjdhMHRLZFozWDJUS2x4OUwiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzAyNjk1NzkwLCJpYXQiOjE3MDI2OTIxOTAsImlzcyI6Imh0dHBzOi8vdmNsenVjY3NkcmthdmZtdWdjaXAuc3VwYWJhc2UuY28vYXV0aC92MSIsInN1YiI6IjQ0NzA0OTQwLTc2OTktNGY3MS1iMmZkLWM3ZWE2YWM0N2E5MyIsImVtYWlsIjoibnNwYW5uNzdAZ21haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6e30sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoib3RwIiwidGltZXN0YW1wIjoxNzAyNjkyMTkwfV0sInNlc3Npb25faWQiOiIzNmQwY2Y5Zi0yNjc3LTQ0MzYtODU1MS0xNDIxNmZhNDNmZTgifQ.CeFV_zZh3HNWKZd6QWfS4uieTIEQnIZP_pxmPJQV1T8"
+          };
+        }
       })
     ]
   })
