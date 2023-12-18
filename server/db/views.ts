@@ -6,7 +6,6 @@ export const comments_view = () => kyselyDb
     "comment_id",
     "level",
     "parent_id",
-    // "user_id",
     eb
       .case()
       .when("is_deleted", "=", true)

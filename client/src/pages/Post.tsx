@@ -21,15 +21,15 @@ import ReplyCommentField from "../components/ReplyCommentField";
 import ChildComments from "../components/ChildComments";
 
 function resourceStore<T, S>(watcher:ResourceSource<S>, fetcher:ResourceFetcher<S, T, unknown>, options={}) {
-  const [store, setStore] = createStore<PostAndComments[]>([]);
+  const [store, setStore] = createStore<T[]>([]);
 
-  function toSignal<T>(v?: T) { 
+  function toSignal<T>(v: T) { 
     return ([
       () => store[0],
       (update: T) => (
         setStore(0, reconcile(typeof update === "function" ? update(unwrap(store[0])) : v))
       )
-    ] as Signal<T | undefined>)
+    ] as unknown as Signal<T>)
   }
 
   const [ status, { refetch } ] = createResource<T, S>(

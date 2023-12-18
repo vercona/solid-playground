@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.ts",
   "scripts": {
-    "start": "nodemon server.ts",
+    "start": "nodemon server.ts | pino-pretty",
     "build": "tsc -p tsconfig.json",
     "migrate": "drizzle-kit generate:pg --config=drizzle.config.ts",
     "drizzle-studio": "npx drizzle-kit studio --port 5000 --verbose",
@@ -31,6 +31,7 @@
     "@types/pg": "^8.10.9",
     "drizzle-kit": "^0.19.13",
     "nodemon": "^3.0.1",
+    "pino-pretty": "^10.2.3",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
   }

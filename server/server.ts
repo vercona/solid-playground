@@ -11,28 +11,21 @@ const fastify = Fastify({
 });
 
 // Declare a route
-// fastify.get("/", function (request, reply) {
-//   reply.send({ hello: "world" });
-// });
+fastify.get("/ping", function (request, reply) {
+  reply.send({ pong: "hello world" });
+});
 
 const main = async () => {
-  // console.log("db", db);
-  // await migrate(db, { migrationsFolder: "./migrations" })
-  //   .then(() => {
-  //     console.log("Migrations complete!");
-  //     process.exit(0);
-  //   })
-  //   .catch((err) => {
-  //     console.error("Migrations failed!", err);
-  //     process.exit(1);
-  //   });
   await fastify.register(cors, {
     origin: "*"
   });
 
-  await migrate(db, {
-    migrationsFolder: "./migrations",
-  });
+  await migrate(db, { migrationsFolder: "./migrations" })
+    .then(() => console.log("Migrations complete!") )
+    .catch((err) => {
+      console.error("Migrations failed!", err);
+      process.exit(1);
+    });
 
   await fastify.register(fastifyTRPCPlugin, {
     prefix: "/trpc",
@@ -47,27 +40,6 @@ const main = async () => {
     }
     // Server is now listening on ${address}
   });
-  // (async () => {
-  //   try {
-  //     await fastify.listen({ port: 8080 });
-  //   } catch (err) {
-  //     fastify.log.error(err);
-  //     process.exit(1);
-  //   }
-  // })();
 };
+
 main();
-
-// fastify.register(fastifyTRPCPlugin, {
-//   prefix: "/",
-//   trpcOptions: { router: routes, createContext },
-// });
-
-// (async () => {
-//   try {
-//     await fastify.listen({ port: 8080 });
-//   } catch (err) {
-//     fastify.log.error(err);
-//     process.exit(1);
-//   }
-// })();
