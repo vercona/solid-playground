@@ -142,13 +142,29 @@ import {
 //   }
 // }
 
+interface NetlifyRequest extends Request {
+  [key: symbol]: {
+    [headersMap: symbol]: {
+      [headersList: symbol]: Map<"authorization", {
+          value: string
+        }>
+    },
+    body: {
+      source: string;
+    }
+  },
+}
 
-export default async (req: Request, context: Context) => {
+interface ErrorObj extends Error {
+  code?: number;
+}
+
+export default async (req: NetlifyRequest, context: Context) => {
   console.log("You have reached here!!", req);
   // console.log("Get body", req.body);
-  const headersSymbol = Object.getOwnPropertySymbols(req).find(
+  const headersSymbol: symbol = Object.getOwnPropertySymbols(req).find(
     (s) => s.description === "headers"
-  );
+  )!;
 
   const headersListSymbol = req[headersSymbol]
     ? Object.getOwnPropertySymbols(req[headersSymbol]).find(
@@ -157,25 +173,22 @@ export default async (req: Request, context: Context) => {
     : null;
 
   const headersMapSymbol =
-    req[headersSymbol] && req[headersSymbol][headersListSymbol]
+    req[headersSymbol] && headersListSymbol && req[headersSymbol][headersListSymbol]
       ? Object.getOwnPropertySymbols(
           req[headersSymbol][headersListSymbol]
         ).find((s) => s.description === "headers map")
       : null;
 
-  const headersMapArr = Object.getOwnPropertySymbols(
-    req[headersSymbol][headersListSymbol]
-  );
-
   const headers = req[headersSymbol];
-  const headersList = headers?.[headersListSymbol];
-  const headersMap = headersList?.[headersMapSymbol];
-  const authorizationKey = headersMap?.get("authorization") && headersMap?.get("authorization").value;
+  const headersList = headersListSymbol && headers[headersListSymbol];
+  const headersMap = headersListSymbol && headersMapSymbol && headersList?.[headersMapSymbol];
+  const authObj = headersMap?.get("authorization");
+  const authorizationKey = authObj && authObj.value;
 
   if (
     !(process.env.AUTHORIZATION_KEY === authorizationKey)
   ) {
-    const authorizationError = new Error("NOT AUTHORIZED");
+    const authorizationError: ErrorObj = new Error("NOT AUTHORIZED");
     authorizationError.code = 401;
     throw authorizationError;
   }
@@ -210,8 +223,3 @@ export default async (req: Request, context: Context) => {
 export const config: Config = {
   path: "/add-user",
 };
-
-// fastify.get("/add-user", function (request, reply) {
-//   reply.send({ hello: "world" });
-// });
-
