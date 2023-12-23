@@ -65,15 +65,15 @@ const CommentsSchema: z.ZodType<Comments> = z.lazy(() =>
 
 
 import { TRPCError } from "@trpc/server";
-import { publicProcedure, protectedProcedure } from "../trpc";
+import { publicProcedure } from "../trpc";
 import { QueryCreator } from "kysely";
 import { kyselyDb } from "../../db/kyselyDb";
 import { comments_view } from "../../db/views";
-import { reusable } from './utils/reusable'
-import { nestComments, Comments } from './utils/nested'
+import { reusable } from './utils/reusable';
+import { nestComments, Comments } from './utils/nested';
 
 export default (
-  protectedProcedure
+  publicProcedure
     .input(getAllCommentsInput)
     .output(
       z.object({

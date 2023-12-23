@@ -1,0 +1,28 @@
+{
+  "name": "netlify-functions",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:functions": "netlify-lambda build functions --config ./webpack.config.netlify.js",
+    "start": "netlify dev",
+    "deploy": "netlify deploy --prod",
+    "test-query": "ts-node testQueries.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fastify/aws-lambda": "^3.5.0",
+    "@netlify/functions": "^2.4.1",
+    "dotenv-safe": "^8.2.0",
+    "fastify": "^4.25.1",
+    "unique-names-generator": "^4.7.1",
+    "webpack": "^5.89.0",
+    "webpack-node-externals": "^3.0.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

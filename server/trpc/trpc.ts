@@ -1,6 +1,7 @@
-import { initTRPC } from "@trpc/server";
+import { TRPCError, initTRPC } from "@trpc/server";
 import { ZodError } from "zod";
 import { createContext } from "../context";
+import { supabaseClient } from "../db/supabase";
 
 export const t = initTRPC.context<typeof createContext>().create({
   errorFormatter({ shape, error }) {
@@ -22,10 +23,12 @@ export const middleware = t.middleware;
 
 const isAuthorized = middleware(async (opts) => {
   const { ctx } = opts;
-  // if (!ctx.user?.isAdmin) {
-  //   throw new TRPCError({ code: "UNAUTHORIZED" });
-  // }
-  console.log("session", ctx)
+
+  const userData = await supabaseClient.auth.getUser(ctx.authToken);
+  if (!userData.data.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+
   return opts.next({
     ctx: ctx.authToken,
   });

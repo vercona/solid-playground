@@ -12,7 +12,7 @@ export default (
       const { data, error } = await supabaseClient.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: "https://example.com/welcome",
+          emailRedirectTo: "http://localhost:3000",
         },
       });
 
@@ -22,10 +22,10 @@ export default (
 
 
 /***   Demo   ***/
-// npm run demo:trpc auth/paswordlessLogin
+// npm run demo:trpc auth/passwordlessLogin
 import type { DemoClient } from "../routes";
 export async function demo(trpc: DemoClient) {
   return await trpc.auth.passwordlessLogin.query({
-    email: ''
+    email: 'nspann77@gmail.com'
   })
 }

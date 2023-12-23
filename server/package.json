@@ -7,12 +7,12 @@
     "start": "nodemon server.ts | pino-pretty",
     "build": "tsc -p tsconfig.json",
     "migrate": "drizzle-kit generate:pg --config=drizzle.config.ts",
-    "drizzle-studio": "npx drizzle-kit studio --port 5000 --verbose",
-    "test-query": "ts-node testQueries.ts"
+    "drizzle-studio": "npx drizzle-kit studio --port 5000 --verbose"
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@fastify/auth": "^4.4.0",
     "@fastify/cors": "^8.4.1",
     "@supabase/supabase-js": "^2.39.0",
     "@trpc/server": "^10.43.0",
@@ -32,6 +32,7 @@
     "drizzle-kit": "^0.19.13",
     "nodemon": "^3.0.1",
     "pino-pretty": "^10.2.3",
+    "supabase": "^1.123.4",
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2"
   }

@@ -14,8 +14,8 @@ const createCommentInput = createInsertSchema(comments).omit({
 
 /***   Query   ***/
 import { kyselyDb } from "../../db/kyselyDb";
-import { publicProcedure } from "../trpc";
-export default publicProcedure
+import { publicProcedure, protectedProcedure } from "../trpc";
+export default protectedProcedure
     .input(createCommentInput)
     .mutation(async (req) => {
       const { parent_id, level, user_id, post_id, body } = req.input;
@@ -113,16 +113,16 @@ export async function demo(trpc: DemoClient) {
       parent_id: null,
       user_id: Baam,
       post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
-      body: "First level comment with Baam",
+      body: "Protected procedure comment with Baam",
     }),
 
     // Child comment
-    trpc.messages.createComment.mutate({
-      level: 1,
-      parent_id: "e0257a7a-8f56-4b72-beb3-85093faa9f1c",
-      user_id: Baam,
-      post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
-      body: "Testing new create with Baam",
-    })
+    // trpc.messages.createComment.mutate({
+    //   level: 1,
+    //   parent_id: "e0257a7a-8f56-4b72-beb3-85093faa9f1c",
+    //   user_id: Baam,
+    //   post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
+    //   body: "Testing new create with Baam",
+    // })
   ])
 }
