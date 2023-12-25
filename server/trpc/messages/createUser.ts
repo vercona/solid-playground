@@ -4,7 +4,7 @@ import { users, usersTableName } from "../../db/schemas";
 /***   INPUT   ***/
 import { createInsertSchema } from "drizzle-zod";
 export const createUserInput = createInsertSchema(users)
-  .omit({ user_id: true, created_at: true });
+  .omit({ created_at: true });
 
 
 /***   Query   ***/
