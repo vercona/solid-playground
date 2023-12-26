@@ -1,18 +1,20 @@
-import { z } from "zod";
-import { supabaseClient } from "../../db/supabase"
-
+import { supabaseClient } from "../../db/supabase";
 
 /***   Query   ***/
-import { publicProcedure } from "../trpc";
+import { protectedProcedure } from "../trpc";
 export default (
-  publicProcedure
-    // .input(z.object({ token: z.string() }))
-    .query(async (req,) => {
-      // const { token } = req.input;
-      // const { data, error } = await supabaseClient.auth.getUser(token);
+  protectedProcedure
+    .query(async ({ctx}) => {
+      console.log("ctx", ctx)
+      const { data } = await supabaseClient.auth.getUser(ctx.authToken);
 
-      // console.log("error", error);
-      // return data;
+      const getUserRes = await kyselyDb
+        .selectFrom("profiles")
+        .selectAll()
+        .where("user_id", '=', data.user!.id)
+        .execute()
+
+      return getUserRes;
     })
 )
 
@@ -20,7 +22,7 @@ export default (
 /***   Demo   ***/
 // npm run demo:trpc auth/getUser
 import type { DemoClient } from "../routes";
+import { kyselyDb } from "../../db/kyselyDb";
 export async function demo(trpc: DemoClient) {
-  console.log('HIT')
   return await trpc.auth.getUser.query()
 }

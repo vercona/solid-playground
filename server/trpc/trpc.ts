@@ -23,14 +23,19 @@ export const middleware = t.middleware;
 
 const isAuthorized = middleware(async (opts) => {
   const { ctx } = opts;
+  const authToken = ctx.authToken;
 
-  const userData = await supabaseClient.auth.getUser(ctx.authToken);
+  const userData = await supabaseClient.auth.getUser(authToken);
   if (!userData.data.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
 
+  console.log("userData", userData)
+
   return opts.next({
-    ctx: ctx.authToken,
+    ctx: {
+      authToken
+    },
   });
 });
 

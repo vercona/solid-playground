@@ -2,7 +2,8 @@
 
 import { router } from "../trpc"
 
-import getUser from './getUser'
+import getUser from './getUser';
+import updateUser from './updateUser';
 import passwordlessLogin from './passwordlessLogin'
 import refreshSession from './refreshSession'
 import testAuth from './testAuth'
@@ -10,6 +11,7 @@ import testAuth from './testAuth'
 
 export default router({
   getUser,
+  updateUser,
   passwordlessLogin,
   refreshSession,
   testAuth

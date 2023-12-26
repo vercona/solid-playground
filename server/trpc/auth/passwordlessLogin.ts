@@ -26,6 +26,6 @@ export default (
 import type { DemoClient } from "../routes";
 export async function demo(trpc: DemoClient) {
   return await trpc.auth.passwordlessLogin.query({
-    email: 'nabilspann@gmail.com'
+    email: 'nspann77@gmail.com'
   })
 }
