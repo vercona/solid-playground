@@ -30,8 +30,6 @@ const isAuthorized = middleware(async (opts) => {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
 
-  console.log("userData", userData)
-
   return opts.next({
     ctx: {
       authToken

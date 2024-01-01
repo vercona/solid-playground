@@ -10,7 +10,7 @@ export const updateUserInput = createInsertSchema(users)
 import { protectedProcedure } from "../trpc";
 export default protectedProcedure
   .input(updateUserInput)
-  .query(async (req) => {
+  .mutation(async (req) => {
     const { username } = req.input;
     const authToken = req.ctx.authToken;
     const { data } = await supabaseClient.auth.getUser(authToken);
@@ -32,5 +32,5 @@ export default protectedProcedure
 import type { DemoClient } from "../routes";
 import { kyselyDb } from "../../db/kyselyDb";
 export async function demo(trpc: DemoClient) {
-  return await trpc.auth.updateUser.query({ username: "Genos" });
+  return await trpc.auth.updateUser.mutate({ username: "Genos" });
 }

@@ -82,6 +82,17 @@ export const getSentTimeMessage = ({ minutes, hours, days, weeks, months, years 
   }
 };
 
+const setCookie = (name: string, value: string, expireNum: string) => {
+  var expires = "";
+  if (expireNum) {
+    var date = new Date();
+    // date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+    const formattedExpirationDate = new Date(Number(expireNum) * 1000);
+    expires = "; expires=" + formattedExpirationDate.toUTCString();
+  }
+  document.cookie = name + "=" + (value || "") + expires + "; path=/";
+};
+
 export const storeTokenFromUrl = (location: Location<unknown>) => {
   const formattedLocationHash = location.hash.replace("#access_token", "access_token");
   const searchParams = new URLSearchParams(formattedLocationHash);
@@ -89,9 +100,32 @@ export const storeTokenFromUrl = (location: Location<unknown>) => {
   const expires = searchParams.get("expires_at");
   if (accessToken && expires) {
     const formattedExpirationDate = new Date(Number(expires) * 1000);
-    cookieStorage.setItem(authTokenCookieName, accessToken, { sameSite: "Lax", expires: formattedExpirationDate });
+    cookieStorage.setItem(authTokenCookieName, accessToken, { sameSite: "Strict", expires: formattedExpirationDate });
+    // setCookie(authTokenCookieName, accessToken, expires);
   }
 };
+
+const getCookie = (name: string) => {
+  var nameEQ = name + "=";
+  var ca = document.cookie.split(';');
+  for (var i = 0; i < ca.length; i++) {
+    var c = ca[i];
+    while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+}
+
+const deleteCookie = ( name:string, path:string, domain:string ) => {
+  if (cookieStorage.getItem(authTokenCookieName)) {
+    document.cookie =
+      name +
+      "=" +
+      (path ? ";path=" + path : "") +
+      (domain ? ";domain=" + domain : "") +
+      ";expires=Thu, 01 Jan 1970 00:00:01 GMT";
+  }
+}
 
 export const getAuthTokenFromCookie = () => {
   const authToken = cookieStorage.getItem(authTokenCookieName);
@@ -100,3 +134,8 @@ export const getAuthTokenFromCookie = () => {
   }
   return "";
 }
+
+export const removeAuthTokenFromCookie = () => {
+  const hostname = window.location.hostname;
+  deleteCookie(authTokenCookieName, "/", hostname);
+};

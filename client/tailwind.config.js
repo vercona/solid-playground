@@ -2,7 +2,11 @@
 export default {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
-    extend: {},
+    extend: {
+      height: {
+        fullScreen: "calc(100vh - 48px)",
+      },
+    },
   },
   plugins: [],
 };
