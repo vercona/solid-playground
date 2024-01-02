@@ -1,7 +1,6 @@
-import { Location } from "@solidjs/router";
+import { Location, useNavigate } from "@solidjs/router";
 import { ErrorType } from "./interfaces";
-import { createSignal } from "solid-js";
-import { cookieStorage, makePersisted } from "@solid-primitives/storage";
+import { cookieStorage } from "@solid-primitives/storage";
 import { authTokenCookieName } from "./constants";
 
 interface TimeDifference {
@@ -82,15 +81,14 @@ export const getSentTimeMessage = ({ minutes, hours, days, weeks, months, years 
   }
 };
 
-const setCookie = (name: string, value: string, expireNum: string) => {
-  var expires = "";
-  if (expireNum) {
-    var date = new Date();
-    // date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
-    const formattedExpirationDate = new Date(Number(expireNum) * 1000);
-    expires = "; expires=" + formattedExpirationDate.toUTCString();
+
+export const redirectToAccount = (location: Location<unknown>) => {
+  const navigate = useNavigate();
+  const searchParams = new URLSearchParams(location.hash);
+  const loginType = searchParams.get("type");
+  if(loginType === "signup"){
+    navigate("/account?type=signup");
   }
-  document.cookie = name + "=" + (value || "") + expires + "; path=/";
 };
 
 export const storeTokenFromUrl = (location: Location<unknown>) => {
@@ -104,17 +102,6 @@ export const storeTokenFromUrl = (location: Location<unknown>) => {
     // setCookie(authTokenCookieName, accessToken, expires);
   }
 };
-
-const getCookie = (name: string) => {
-  var nameEQ = name + "=";
-  var ca = document.cookie.split(';');
-  for (var i = 0; i < ca.length; i++) {
-    var c = ca[i];
-    while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-    if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
-  }
-  return null;
-}
 
 const deleteCookie = ( name:string, path:string, domain:string ) => {
   if (cookieStorage.getItem(authTokenCookieName)) {
@@ -139,3 +126,6 @@ export const removeAuthTokenFromCookie = () => {
   const hostname = window.location.hostname;
   deleteCookie(authTokenCookieName, "/", hostname);
 };
+
+
+// /#access_token=eyJhbGciOiJIUzI1NiIsImtpZCI6IjdhMHRLZFozWDJUS2x4OUwiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzA0MTU4NjI5LCJpYXQiOjE3MDQxNTUwMjksImlzcyI6Imh0dHBzOi8vdmNsenVjY3NkcmthdmZtdWdjaXAuc3VwYWJhc2UuY28vYXV0aC92MSIsInN1YiI6IjkxODk3OTVjLTc3NGQtNGQ2NC04M2NiLTkxMDEyNjE0Yzc5NyIsImVtYWlsIjoibmFiaWxzcGFubkBnbWFpbC5jb20iLCJwaG9uZSI6IiIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIiwicHJvdmlkZXJzIjpbImVtYWlsIl19LCJ1c2VyX21ldGFkYXRhIjp7fSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJvdHAiLCJ0aW1lc3RhbXAiOjE3MDQxNTUwMjl9XSwic2Vzc2lvbl9pZCI6IjY5MDBmMWE5LWVjODgtNDU2OC1iM2Q0LTg2MmU1MmYxZGQ0YSJ9.rTp7hBCXYmxc0IhRp9KIHsUi837cE9uucGlHl85jZv4&expires_at=1704158629&expires_in=3600&refresh_token=RuQc4tff-xPgTQgh_5Uz0w&token_type=bearer&type=signup

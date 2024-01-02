@@ -1,6 +1,6 @@
 import { ErrorBoundary, Show, createResource, createSignal } from "solid-js";
 import { getUser, updateUser } from "../apiCalls/AuthCalls";
-import { Navigate } from "@solidjs/router";
+import { Navigate, useSearchParams } from "@solidjs/router";
 import { formatErrorUrl } from "../utils/utilFunctions";
 import { errorPageUrl } from "../utils/constants";
 import type { ErrorType } from "../utils/interfaces";
@@ -18,6 +18,7 @@ const usernameLoading = () => {
 
 const Account = () => {
     const [user, {mutate}] = createResource(getUser);
+    const [params] = useSearchParams();
     const [usernameInput, setUsernameInput] = createSignal("");
     const [settings, setSettings] = createSignal({
       errorMessage: "",
@@ -35,7 +36,6 @@ const Account = () => {
         try{
             const response = await updateUser(usernameInput());
 
-            console.log("response", response);
             const prevUser = user()?.[0] || { user_id: "", created_at: ""};
             mutate([{
                 ...prevUser,
@@ -61,6 +61,13 @@ const Account = () => {
 
     return (
       <div class="flex flex-col justify-center items-center overflow-hidden h-fullScreen">
+        <Show when={params.type && params.type === "signup"}>
+          <div class="text-cyan-400 max-w-xl text-center py-4">
+            Welcome to Vercona! We have automatically generated an username for
+            you. If you would like to change your username now, you can do so.
+            You can always change it later as well.
+          </div>
+        </Show>
         <Show when={!user.loading} fallback={usernameLoading()}>
           <ErrorBoundary
             fallback={() => {

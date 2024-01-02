@@ -1,5 +1,4 @@
 import { createRoot, createSignal } from "solid-js";
-import { createStore } from "solid-js/store";
 import { Location } from "@solidjs/router";
 
 import { getAuthTokenFromCookie, removeAuthTokenFromCookie, storeTokenFromUrl } from "./utilFunctions";

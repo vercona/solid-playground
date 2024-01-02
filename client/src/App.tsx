@@ -10,13 +10,17 @@ import { errorPageUrl } from './utils/constants';
 import authStore from "./utils/createAuthStore";
 import Account from './pages/Account';
 import RouteGuard from './components/RouteGuard';
+import { redirectToAccount } from './utils/utilFunctions';
 
 const App: Component = () => {
   const location = useLocation();
 
-  // storeTokenFromUrl(location);
-  const { mutateToken } = authStore;
-  mutateToken(location);
+  if (location.hash.includes("#access_token")){
+    const { mutateToken } = authStore;
+    mutateToken(location);
+    redirectToAccount(location);
+  };
+
   return (
     <div class="min-h-screen bg-black">
       <MainHeader />
@@ -28,8 +32,6 @@ const App: Component = () => {
         <Route path="/posts/:postId" component={Post} />
         <Route path="/signin" component={SignIn} />
         <Route path={`/${errorPageUrl}`} component={ErrorPage} />
-        {/* <Route path="/account" component={Account}/> */}
-        {/* <ProtectedRoute path="/account" component={Account} /> */}
       </Routes>
     </div>
   );

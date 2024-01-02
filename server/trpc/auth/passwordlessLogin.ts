@@ -11,7 +11,7 @@ export default (
     .input(emailSchema)
     .query(async (req) => {
       const { email } = req.input;
-      const { data, error } = await supabaseClient.auth.signInWithOtp({
+      const { data } = await supabaseClient.auth.signInWithOtp({
         email,
         options: {
           emailRedirectTo: "http://localhost:3000",

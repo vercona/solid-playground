@@ -9,7 +9,6 @@ interface ProtectedRouteProps {
 }
 
 const RouteGuard = () => {
-    // const {path, component} = destructure(props);
     const { authToken } = authStore;
     const navigate = useNavigate();
 
