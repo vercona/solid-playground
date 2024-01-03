@@ -5,13 +5,11 @@ import { protectedProcedure } from "../trpc";
 export default (
   protectedProcedure
     .query(async ({ctx}) => {
-      console.log("ctx", ctx)
-      const { data } = await supabaseClient.auth.getUser(ctx.authToken);
 
       const getUserRes = await kyselyDb
         .selectFrom("profiles")
         .selectAll()
-        .where("user_id", '=', data.user!.id)
+        .where("user_id", '=', ctx.user.id)
         .execute()
 
       return getUserRes;

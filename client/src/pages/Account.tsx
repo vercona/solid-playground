@@ -2,8 +2,7 @@ import { ErrorBoundary, Show, createResource, createSignal } from "solid-js";
 import { getUser, updateUser } from "../apiCalls/AuthCalls";
 import { Navigate, useSearchParams } from "@solidjs/router";
 import { formatErrorUrl } from "../utils/utilFunctions";
-import { errorPageUrl } from "../utils/constants";
-import type { ErrorType } from "../utils/interfaces";
+import type { GetUser, ErrorType } from "../utils/interfaces";
 import CurrentlySending from "../components/CurrentlySending";
 
 const userNameFallBack = () => {
@@ -17,7 +16,7 @@ const usernameLoading = () => {
 }
 
 const Account = () => {
-    const [user, {mutate}] = createResource(getUser);
+    const [user, {mutate}] = createResource<GetUser>(getUser);
     const [params] = useSearchParams();
     const [usernameInput, setUsernameInput] = createSignal("");
     const [settings, setSettings] = createSignal({

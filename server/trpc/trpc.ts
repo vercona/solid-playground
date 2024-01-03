@@ -32,7 +32,8 @@ const isAuthorized = middleware(async (opts) => {
 
   return opts.next({
     ctx: {
-      authToken
+      authToken,
+      user: userData.data.user
     },
   });
 });

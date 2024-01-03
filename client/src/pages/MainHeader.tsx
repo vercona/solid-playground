@@ -3,7 +3,9 @@ import { A } from "@solidjs/router";
 import authStore from "../utils/createAuthStore";
 
 const MainHeader = () => {
-  const { authToken, removeToken } = authStore;
+  const { authToken, removeToken, user } = authStore;
+
+  console.log("user", user())
   return (
     <div class="w-full flex flex-row bg-purple-900 h-12">
       <div class="w-1/2 flex items-center justify-start px-4">

@@ -107,7 +107,6 @@ const Post = () => {
     try {
       if(singlePost() && singlePost()?.post){
         const response = await submitComment(
-          "e274ca42-560c-49ef-95ab-c10511fb8412",
           singlePost()!.post.post_id,
           0,
           commentText()

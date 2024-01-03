@@ -5,6 +5,8 @@ import { deleteComment, submitComment } from "../apiCalls/CommentSectionCalls";
 import type { Comment as CommentType, ErrorType, PathArray } from "../utils/interfaces";
 import ReplyCommentField from "./ReplyCommentField";
 import ChildComments from "./ChildComments";
+import authStore from "../utils/createAuthStore";
+import { jwtDecode } from "jwt-decode";
 
 interface CommentProps {
   comment: CommentType;
@@ -31,6 +33,8 @@ const Comment = (props: CommentProps) => {
   const { comment, post_id, pathArr } =
     destructure(props);
 
+  const { authToken, user } = authStore;
+
   const [commentText, setCommentText] = createSignal('');
   const [settings, setSettings] = createSignal({
     isExpanded: false,
@@ -52,7 +56,6 @@ const Comment = (props: CommentProps) => {
     e.preventDefault();
     try{
       const response = await submitComment(
-        "e274ca42-560c-49ef-95ab-c10511fb8412",
         post_id(),
         // "",
         // "e0257a7a-8f56-4b72-beb3-85093faa9f10",
@@ -117,7 +120,7 @@ const Comment = (props: CommentProps) => {
         >
           Reply
         </button>
-        <Show when={!comment().is_deleted}>
+        <Show when={!comment().is_deleted && comment().user.user_id === user()[0].user_id}>
           <button
             onClick={handleDeleteComment}
             class="px-2 border-2 mx-2 border-rose-900"

@@ -99,8 +99,10 @@ export const storeTokenFromUrl = (location: Location<unknown>) => {
   if (accessToken && expires) {
     const formattedExpirationDate = new Date(Number(expires) * 1000);
     cookieStorage.setItem(authTokenCookieName, accessToken, { sameSite: "Strict", expires: formattedExpirationDate });
+    return accessToken;
     // setCookie(authTokenCookieName, accessToken, expires);
   }
+  return "";
 };
 
 const deleteCookie = ( name:string, path:string, domain:string ) => {

@@ -9,13 +9,32 @@ export const deleteCommentInput = createSelectSchema(comments)
 
 /***   Query   ***/
 import { kyselyDb } from "../../db/kyselyDb";
-import { publicProcedure } from "../trpc";
+import { protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 export default ( 
-  publicProcedure
+  protectedProcedure
     .input(deleteCommentInput)
     .mutation(async (req) => {
       const input = req.input;
+      const user = req.ctx.user;
+      console.log("user", user)
+
+      const commentUserId = await kyselyDb
+        .selectFrom(commentsTableName)
+        .select("user_id")
+        .where("comment_id", "=", input.comment_id)
+        .execute();
+
+      if(commentUserId.length === 0){
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Comment not found",
+        });
+      }
+
+      if(commentUserId[0] && commentUserId[0].user_id !== user.id){
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
 
       const response = await kyselyDb
         .updateTable(commentsTableName)
@@ -24,23 +43,15 @@ export default (
         .returning("comment_id")
         .execute();
 
-      if (response.length === 0) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Comment not found",
-        });
-      }
-
       return response;
     })
 )
-
 
 /***   Demo   ***/
 // npm run demo:trpc messages/deleteComment
 import type { DemoClient } from "../routes";
 export async function demo(trpc: DemoClient) {
   return await trpc.messages.deleteComment.mutate({
-    comment_id: "9f1b96dc-fce8-4751-ac9a-ab06c966a820",
-  })
+    comment_id: "9893efb1-5b36-4ce7-9f53-8b4469d30b38",
+  });
 }

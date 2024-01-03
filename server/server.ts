@@ -33,30 +33,6 @@ const main = async () => {
     trpcOptions: { router: routes, createContext },
   });
 
-  // await fastify
-  //   .decorate("verifyAuth", function (request: any, reply: any, done: any) {
-  //     console.log("request", request);
-  //     done();
-  //   })
-  //   .register(require("@fastify/auth"))
-  //   .after(() => {
-  //     fastify.route({
-  //       method: "GET",
-  //       url: "/add-user",
-  //       preHandler: fastify.auth([fastify.verifyAuth]),
-  //       handler: (req, reply) => {
-  //         console.log("route req", req);
-  //         reply.send({ hello: "world" });
-  //       },
-  //     });
-  //   });
-
-  // fastify.get('/add-user', (request, reply) => {
-  //   console.log("request routeOptions", request.routeOptions);
-  //   reply.redirect("http://localhost:3000");
-    
-  // });
-
   // Run the server!
   await fastify.listen({ port: 8080 }, function (err, address) {
     if (err) {

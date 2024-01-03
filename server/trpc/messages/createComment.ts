@@ -3,22 +3,22 @@ import { comments } from "../../db/schemas";
 
 /***   INPUT   ***/
 import { createInsertSchema } from "drizzle-zod";
-const createCommentInput = createInsertSchema(comments).omit({
-  comment_id: true,
-  dislikes: true,
-  likes: true,
-  created_at: true,
-  comment_num: true
+const createCommentInput = createInsertSchema(comments).pick({
+  parent_id: true,
+  level: true,
+  post_id: true,
+  body: true,
 });
 
 
 /***   Query   ***/
 import { kyselyDb } from "../../db/kyselyDb";
-import { publicProcedure, protectedProcedure } from "../trpc";
+import { protectedProcedure } from "../trpc";
 export default protectedProcedure
     .input(createCommentInput)
     .mutation(async (req) => {
-      const { parent_id, level, user_id, post_id, body } = req.input;
+      const { parent_id, level, post_id, body } = req.input;
+      const user_id = req.ctx.user.id;
 
       const response = await kyselyDb
         .with("comment_pagination", (withQuery) => {
@@ -111,7 +111,6 @@ export async function demo(trpc: DemoClient) {
     trpc.messages.createComment.mutate({
       level: 0,
       parent_id: null,
-      user_id: Baam,
       post_id: "318fe5eb-b6cc-4519-9410-a28b4a603b98",
       body: "Protected procedure comment with Baam",
     }),

@@ -20,9 +20,8 @@ export const getPost = async (post_id: string) => {
     return response;
 };
 
-export const submitComment = async (user_id: string, post_id: string, level: number, body: string, parent_id: string | null = null) => {
+export const submitComment = async (post_id: string, level: number, body: string, parent_id: string | null = null) => {
   return trpc.messages.createComment.mutate({
-    user_id,
     post_id,
     level,
     body,
