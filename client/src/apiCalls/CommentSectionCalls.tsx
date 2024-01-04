@@ -21,7 +21,7 @@ export const getPost = async (post_id: string) => {
 };
 
 export const submitComment = async (post_id: string, level: number, body: string, parent_id: string | null = null) => {
-  return trpc.messages.createComment.mutate({
+  return await trpc.messages.createComment.mutate({
     post_id,
     level,
     body,
@@ -30,7 +30,7 @@ export const submitComment = async (post_id: string, level: number, body: string
 };
 
 export const deleteComment = async (comment_id: string) => {
-  return trpc.messages.deleteComment.mutate({ comment_id });
+  return await trpc.messages.deleteComment.mutate({ comment_id });
 };
 
 export const getAdditionalComments = async (
@@ -41,7 +41,7 @@ export const getAdditionalComments = async (
   start_level: number,
   query_depth: number | null = null
 ) => {
-  return trpc.messages.getRepliedComments.query({
+  return await trpc.messages.getRepliedComments.query({
     post_id,
     parent_id,
     begin_comment_num,
@@ -49,4 +49,8 @@ export const getAdditionalComments = async (
     start_level,
     query_depth,
   });
+};
+
+export const getAllPosts = async () => {
+  return await trpc.messages.getAllPosts.query();
 };

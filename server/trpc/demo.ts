@@ -59,7 +59,7 @@ let test = url.pathToFileURL(fullPath).href;
         async headers() {
           return {
             authorization:
-              "eyJhbGciOiJIUzI1NiIsImtpZCI6IjdhMHRLZFozWDJUS2x4OUwiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzA0MjQzNDQxLCJpYXQiOjE3MDQyMzk4NDEsImlzcyI6Imh0dHBzOi8vdmNsenVjY3NkcmthdmZtdWdjaXAuc3VwYWJhc2UuY28vYXV0aC92MSIsInN1YiI6IjQ0NzA0OTQwLTc2OTktNGY3MS1iMmZkLWM3ZWE2YWM0N2E5MyIsImVtYWlsIjoibnNwYW5uNzdAZ21haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6e30sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoib3RwIiwidGltZXN0YW1wIjoxNzA0MjM5ODQxfV0sInNlc3Npb25faWQiOiI3ODRiN2E4ZC0wM2IwLTQ2YWItYTg1NS1lZDkwNjNmZjczYjUifQ.k_Zfcx0lV28vMo2jGuqwzaTltj0MECRPRm0On4BMYPI",
+              "eyJhbGciOiJIUzI1NiIsImtpZCI6IjdhMHRLZFozWDJUS2x4OUwiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzA0MzI4NjA3LCJpYXQiOjE3MDQzMjUwMDcsImlzcyI6Imh0dHBzOi8vdmNsenVjY3NkcmthdmZtdWdjaXAuc3VwYWJhc2UuY28vYXV0aC92MSIsInN1YiI6IjQ0NzA0OTQwLTc2OTktNGY3MS1iMmZkLWM3ZWE2YWM0N2E5MyIsImVtYWlsIjoibnNwYW5uNzdAZ21haWwuY29tIiwicGhvbmUiOiIiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJlbWFpbCIsInByb3ZpZGVycyI6WyJlbWFpbCJdfSwidXNlcl9tZXRhZGF0YSI6e30sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoib3RwIiwidGltZXN0YW1wIjoxNzA0MzI1MDA3fV0sInNlc3Npb25faWQiOiI1Yjg3NDcwMS1kMTQxLTQ2OGYtYWU5Mi0zMWNiODI3YzI0M2IifQ.MswTriibSiM9LpYMbqFfJ9AVWM-I9duMixoAlwOPLOU&expires_at=1704328607",
           };
         }
       })
@@ -77,4 +77,4 @@ let test = url.pathToFileURL(fullPath).href;
 
   await fetchQueries()
 
-})()
+})();

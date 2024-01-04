@@ -29,6 +29,17 @@ interface CommentProps {
   ) => void;
 }
 
+interface Settings {
+  isExpanded: boolean;
+  displayForm: boolean;
+  isLoading: boolean;
+  error: {
+    type: "deletion" | "submission" | "reply_button";
+    errorMessage: string;
+    errorClass: string;
+  }
+}
+
 const Comment = (props: CommentProps) => {
   const { comment, post_id, pathArr } =
     destructure(props);
@@ -43,7 +54,8 @@ const Comment = (props: CommentProps) => {
     error: {
       type: '',
       display: false,
-      errorMessage: ''
+      errorMessage: '',
+      errorClass: ''
     }
   });
 
@@ -71,7 +83,12 @@ const Comment = (props: CommentProps) => {
       const formattedError = formatErrorUrl(err as ErrorType);
       setSettings({
         ...settings(),
-        error: { display: true, errorMessage: formattedError.errorMessage, type: 'submission' },
+        error: {
+          display: true,
+          errorMessage: formattedError.errorMessage,
+          type: "submission",
+          errorClass: "text-red-600",
+        },
       });
     }
   };
@@ -90,10 +107,37 @@ const Comment = (props: CommentProps) => {
     }catch(err){
       // console.log("delete err", err)
       const formattedError = formatErrorUrl(err as ErrorType);
-      setSettings({...settings(), error: {display: true, errorMessage: formattedError.errorMessage, type: 'deletion'}})
+      setSettings({
+        ...settings(),
+        error: {
+          display: true,
+          errorMessage: formattedError.errorMessage,
+          type: "deletion",
+          errorClass: "text-red-600",
+        },
+      });
       console.log("formattedError", formattedError);
     }
   };
+
+  const handleReplyButton = () => {
+    if(authToken()){
+      setSettings((currentSettings) => ({
+        ...currentSettings,
+        displayForm: !currentSettings.displayForm,
+      }));
+    }else{
+      setSettings((currentSettings) => ({
+        ...currentSettings,
+        error: {
+          display: true,
+          type: 'reply_button',
+          errorMessage: 'Please login first before replying!',
+          errorClass: "text-blue-600"
+        }
+      }));
+    }
+  }
 
   return (
     <li class="py-5">
@@ -109,18 +153,17 @@ const Comment = (props: CommentProps) => {
           : "This comment has been deleted"}
       </div>
       <div>
-        <button
-          class="py-2"
-          onClick={() =>
-            setSettings((currentSettings) => ({
-              ...currentSettings,
-              displayForm: !currentSettings.displayForm,
-            }))
-          }
-        >
+        <button class="py-2" onClick={handleReplyButton}>
           Reply
         </button>
-        <Show when={!comment().is_deleted && comment().user.user_id === user()[0].user_id}>
+        <Show
+          when={
+            !comment().is_deleted &&
+            user().length !== 0 &&
+            user()[0].user_id &&
+            comment().user.user_id === user()[0].user_id
+          }
+        >
           <button
             onClick={handleDeleteComment}
             class="px-2 border-2 mx-2 border-rose-900"
@@ -149,32 +192,32 @@ const Comment = (props: CommentProps) => {
         when={
           settings().error.display &&
           (settings().error.type === "submission" ||
-            settings().error.type === "deletion")
+            settings().error.type === "deletion" ||
+            settings().error.type === "reply_button")
         }
       >
-        <div class="text-red-600">{settings().error.errorMessage}</div>
+        <div class={settings().error.errorClass}>{settings().error.errorMessage}</div>
       </Show>
       <ChildComments
         comments={comment().comments}
         isTopLevelComment={false}
         numOfChildren={comment().num_of_children}
         handleCommentsPagination={() => {
-            let latestCommentNum;
-            if (comment().comments.length !== 0) {
-              latestCommentNum =
-                comment().comments[comment().comments.length - 1].row_num;
-            } else {
-              latestCommentNum = 0;
-            }
-            return props.handleCommentsPagination(
-              comment().comment_id,
-              latestCommentNum,
-              4,
-              comment().level + 1,
-              pathArr()
-            );
+          let latestCommentNum;
+          if (comment().comments.length !== 0) {
+            latestCommentNum =
+              comment().comments[comment().comments.length - 1].row_num;
+          } else {
+            latestCommentNum = 0;
           }
-        }
+          return props.handleCommentsPagination(
+            comment().comment_id,
+            latestCommentNum,
+            4,
+            comment().level + 1,
+            pathArr()
+          );
+        }}
       >
         <ul class="ml-5">
           <For each={comment().comments}>
