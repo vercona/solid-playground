@@ -1,4 +1,4 @@
-import type { Component } from 'solid-js';
+import { createEffect, type Component } from 'solid-js';
 import { Routes, Route, useLocation } from "@solidjs/router";
 
 import Home from "./pages/Home";
@@ -10,16 +10,26 @@ import { errorPageUrl } from './utils/constants';
 import authStore from "./utils/createAuthStore";
 import Account from './pages/Account';
 import RouteGuard from './components/RouteGuard';
-import { redirectToAccount } from './utils/utilFunctions';
+import { getAuthTokenFromCookie, getRefreshTokenFromCookie, redirectToAccount } from './utils/utilFunctions';
 
 const App: Component = () => {
   const location = useLocation();
 
+  const { mutateToken, refreshToken } = authStore;
   if (location.hash.includes("#access_token")){
-    const { mutateToken } = authStore;
     mutateToken(location);
     redirectToAccount(location);
   };
+
+  createEffect(async () => {
+    if (!location.hash.includes("#access_token")) {
+      const authToken = getAuthTokenFromCookie();
+      const refreshTokenValue = getRefreshTokenFromCookie();
+      if (!authToken && refreshTokenValue) {
+        await refreshToken();
+      }
+    }
+  });
 
   return (
     <div class="min-h-screen bg-black">

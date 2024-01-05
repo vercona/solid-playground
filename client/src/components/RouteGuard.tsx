@@ -1,20 +1,17 @@
-import { destructure } from "@solid-primitives/destructure";
-import { Navigate, Outlet, Route, useLocation, useNavigate } from "@solidjs/router";
-import { Component, createEffect } from "solid-js";
+import { Outlet, useNavigate } from "@solidjs/router";
+import { createEffect } from "solid-js";
 import authStore from "../utils/createAuthStore";
-
-interface ProtectedRouteProps {
-    path: string;
-    component: Component;
-}
+import { getRefreshTokenFromCookie } from "../utils/utilFunctions";
 
 const RouteGuard = () => {
-    const { authToken } = authStore;
+    const { authToken, refreshToken } = authStore;
     const navigate = useNavigate();
 
     createEffect(() => {
-        if(!authToken()){
-            navigate("/signin", { replace: true });
+        if (!authToken() && getRefreshTokenFromCookie()) {
+            refreshToken();
+        }else if (!authToken() && !getRefreshTokenFromCookie()) {
+          navigate("/signin", { replace: true });
         }
     });
 

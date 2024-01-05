@@ -1,7 +1,7 @@
 import { Location, useNavigate } from "@solidjs/router";
 import { ErrorType } from "./interfaces";
 import { cookieStorage } from "@solid-primitives/storage";
-import { authTokenCookieName } from "./constants";
+import { authTokenCookieName, refreshTokenCookieName } from "./constants";
 
 interface TimeDifference {
   minutes: number;
@@ -91,22 +91,43 @@ export const redirectToAccount = (location: Location<unknown>) => {
   }
 };
 
+export const storeToken = (name: string, token: string, expires: Date, sameSite: "None" | "Lax" | "Strict") => {
+  cookieStorage.setItem(
+    name,
+    token, {
+    sameSite,
+    expires,
+  });
+};
+
+export const getJwtExpirationDate = (jwtExpirationDate: number) => {
+  return new Date(Number(jwtExpirationDate) * 1000);
+}
+
 export const storeTokenFromUrl = (location: Location<unknown>) => {
   const formattedLocationHash = location.hash.replace("#access_token", "access_token");
   const searchParams = new URLSearchParams(formattedLocationHash);
-  const accessToken = searchParams.get("access_token");
+  const accessToken = searchParams.get("access_token") || "";
   const expires = searchParams.get("expires_at");
+  const refreshToken = searchParams.get("refresh_token");
   if (accessToken && expires) {
-    const formattedExpirationDate = new Date(Number(expires) * 1000);
-    cookieStorage.setItem(authTokenCookieName, accessToken, { sameSite: "Strict", expires: formattedExpirationDate });
-    return accessToken;
-    // setCookie(authTokenCookieName, accessToken, expires);
+    storeToken(authTokenCookieName, accessToken, getJwtExpirationDate(Number(expires)), "Strict");
   }
-  return "";
+  if(refreshToken){
+    const refreshExpirationDate = new Date();
+    refreshExpirationDate.setDate(refreshExpirationDate.getDate() + 1);
+    storeToken(
+      refreshTokenCookieName,
+      refreshToken,
+      refreshExpirationDate,
+      "Strict"
+    );
+  }
+  return accessToken;
 };
 
-const deleteCookie = ( name:string, path:string, domain:string ) => {
-  if (cookieStorage.getItem(authTokenCookieName)) {
+const deleteCookie = async ( name:string, path:string, domain:string ) => {
+  if (cookieStorage.getItem(name)) {
     document.cookie =
       name +
       "=" +
@@ -124,10 +145,16 @@ export const getAuthTokenFromCookie = () => {
   return "";
 }
 
+export const getRefreshTokenFromCookie = () => {
+  const refreshToken = cookieStorage.getItem(refreshTokenCookieName);
+  if (refreshToken) {
+    return refreshToken;
+  }
+  return "";
+};
+
 export const removeAuthTokenFromCookie = () => {
   const hostname = window.location.hostname;
   deleteCookie(authTokenCookieName, "/", hostname);
+  deleteCookie(refreshTokenCookieName, "/", hostname);
 };
-
-
-// /#access_token=eyJhbGciOiJIUzI1NiIsImtpZCI6IjdhMHRLZFozWDJUS2x4OUwiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzA0MTU4NjI5LCJpYXQiOjE3MDQxNTUwMjksImlzcyI6Imh0dHBzOi8vdmNsenVjY3NkcmthdmZtdWdjaXAuc3VwYWJhc2UuY28vYXV0aC92MSIsInN1YiI6IjkxODk3OTVjLTc3NGQtNGQ2NC04M2NiLTkxMDEyNjE0Yzc5NyIsImVtYWlsIjoibmFiaWxzcGFubkBnbWFpbC5jb20iLCJwaG9uZSI6IiIsImFwcF9tZXRhZGF0YSI6eyJwcm92aWRlciI6ImVtYWlsIiwicHJvdmlkZXJzIjpbImVtYWlsIl19LCJ1c2VyX21ldGFkYXRhIjp7fSwicm9sZSI6ImF1dGhlbnRpY2F0ZWQiLCJhYWwiOiJhYWwxIiwiYW1yIjpbeyJtZXRob2QiOiJvdHAiLCJ0aW1lc3RhbXAiOjE3MDQxNTUwMjl9XSwic2Vzc2lvbl9pZCI6IjY5MDBmMWE5LWVjODgtNDU2OC1iM2Q0LTg2MmU1MmYxZGQ0YSJ9.rTp7hBCXYmxc0IhRp9KIHsUi837cE9uucGlHl85jZv4&expires_at=1704158629&expires_in=3600&refresh_token=RuQc4tff-xPgTQgh_5Uz0w&token_type=bearer&type=signup

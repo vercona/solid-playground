@@ -11,3 +11,7 @@ export const getUser = async () => {
 export const updateUser = async (username: string) => {
     return await trpc.auth.updateUser.mutate({ username });
 };
+
+export const refreshSession = async (refresh_token: string) => {
+    return await trpc.auth.refreshSession.query({ refresh_token });
+};
